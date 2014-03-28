@@ -75,6 +75,7 @@ Sk.builtin.type = function(name, bases, dict)
             klass[v] = dict[v];
         }
         klass['__class__'] = klass;
+		klass['__name__'] = name;
         klass.sk$klass = true;
         klass.prototype.tp$getattr = Sk.builtin.object.prototype.GenericGetAttr;
         klass.prototype.tp$setattr = Sk.builtin.object.prototype.GenericSetAttr;
@@ -89,21 +90,21 @@ Sk.builtin.type = function(name, bases, dict)
             if (mod) cname = mod.v + ".";
             return new Sk.builtin.str("<" + cname + name + " object>");
         };
-        klass.prototype.tp$str = function()
+		klass.prototype.tp$str = function()
         {
             var strf = this.tp$getattr("__str__");
             if (strf !== undefined)
                 return Sk.misceval.apply(strf, undefined, undefined, undefined, []);
             return this['$r']();
         };
-	klass.prototype.tp$length = function()
-	{
-            var lenf = this.tp$getattr("__len__");
-            if (lenf !== undefined)
-                return Sk.misceval.apply(lenf, undefined, undefined, undefined, []);
-	    var tname = Sk.abstr.typeName(this);
-	    throw new Sk.builtin.AttributeError(tname + " instance has no attribute '__len__'");
-	};	    
+		klass.prototype.tp$length = function()
+		{
+				var lenf = this.tp$getattr("__len__");
+				if (lenf !== undefined)
+					return Sk.misceval.apply(lenf, undefined, undefined, undefined, []);
+			var tname = Sk.abstr.typeName(this);
+			throw new Sk.builtin.AttributeError(tname + " instance has no attribute '__len__'");
+		};	    
         klass.prototype.tp$call = function(args, kw)
         {
             var callf = this.tp$getattr("__call__");
