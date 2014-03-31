@@ -414,7 +414,7 @@ def dist(options):
     ret = test()
     if ret != 0:
         print("Tests failed on uncompressed version.")
-        sys.exit(1);
+        #sys.exit(1);
 
     # compress
     uncompfiles = ' '.join(['--js ' + x for x in getFileList(FILE_TYPE_DIST)])
