@@ -16,6 +16,19 @@ numpy.prototype.wrapasfloats = function(values)
 	return values;
 }
 
+numpy.prototype.array = function(length)
+{
+    var arr = new Array(length || 0),
+        i = length;
+
+    if (arguments.length > 1) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        while(i--) arr[length-1 - i] = createArray.apply(this, args);
+    }
+
+    return arr;
+}
+
 numpy.prototype.onarray = function(array, func)
 {
 	var i;
@@ -67,7 +80,8 @@ var $builtinmodule = function(name)
 	/* Simple reimplementation of the linspace function
 	 * http://docs.scipy.org/doc/numpy/reference/generated/numpy.linspace.html
 	 */
-	mod.linspace = new Sk.builtin.func(function(start, stop, num, endpoint, retstep) {
+	 
+	var linspace_f = function(start, stop, num, endpoint, retstep) {
 		Sk.builtin.pyCheckArgs("linspace", arguments, 3, 5);
 		Sk.builtin.pyCheckType("start", "number", Sk.builtin.checkNumber(start));
 		Sk.builtin.pyCheckType("stop", "number", Sk.builtin.checkNumber(stop));
@@ -127,7 +141,12 @@ var $builtinmodule = function(name)
 			return new Sk.builtin.tuple([new Sk.builtin.list(np.wrapasfloats(samples)), step]);
 		
 		return new Sk.builtin.list(np.wrapasfloats(samples));
-    });
+	}
+	
+	// this should allow for named parameters
+	linspace_f.co_varnames = ['start','stop','num','endpoint', 'retstep'];
+	linspace_f.$defaults = [0,0,50,true,false];
+	mod.linspace = new Sk.builtin.func(linspace_f);
 	
 	/* Simple reimplementation of the arange function 
 	 * http://docs.scipy.org/doc/numpy/reference/generated/numpy.arange.html#numpy.arange
@@ -166,6 +185,74 @@ var $builtinmodule = function(name)
 		// return as list, dunno how to work with arrays.
 		return new Sk.builtin.list(np.arange(start_num, stop_num, step_num, type));
     });
+	
+	/* dummy implementation for numpy.array
+	------------------------------------------------------------------------------------------------
+		http://docs.scipy.org/doc/numpy/reference/generated/numpy.array.html#numpy.array
+	
+		object : array_like
+		An array, any object exposing the array interface, an object whose __array__ method returns an array, or any (nested) sequence.
+		
+		dtype : data-type, optional
+		The desired data-type for the array. If not given, then the type will be determined as the minimum type required to hold the objects in the sequence. This argument can only be used to ‘upcast’ the array. For downcasting, use the .astype(t) method.
+		
+		copy : bool, optional
+		If true (default), then the object is copied. Otherwise, a copy will only be made if __array__ returns a copy, if obj is a nested sequence, or if a copy is needed to satisfy any of the other requirements (dtype, order, etc.).
+		
+		order : {‘C’, ‘F’, ‘A’}, optional
+		Specify the order of the array. If order is ‘C’ (default), then the array will be in C-contiguous order (last-index varies the fastest). If order is ‘F’, then the returned array will be in Fortran-contiguous order (first-index varies the fastest). If order is ‘A’, then the returned array may be in any order (either C-, Fortran-contiguous, or even discontiguous).
+		
+		subok : bool, optional
+		If True, then sub-classes will be passed-through, otherwise the returned array will be forced to be a base-class array (default).
+		
+		ndmin : int, optional
+		Specifies the minimum number of dimensions that the resulting array should have. Ones will be pre-pended to the shape as needed to meet this requirement.
+		
+		Returns :	
+		out : ndarray
+		An array object satisfying the specified requirements
+	*/
+	var array_f = function(object, dtype, copy, order, subok, ndmin)
+	{
+		if(object === undefined)
+			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(object) + "' object is undefined");
+		
+		var res=[];
+		
+		if(object instanceof Sk.builtin.list)
+		{
+			object = Sk.ffi.remapToJs(object);
+			var i;
+			var type;
+			
+			// determine type
+			//if(dtype === Sk.builtin.none.none$ && object != undefined && object[0] != undefined)
+			//{
+			//	type = Sk.builtin.checkNumber(dtype)?new Sk.builtin.nmber.number?;
+			//}
+			
+			if(copy)
+			{
+				var array = np.array(object.length);
+				for(i = 0; i < array.length; i++)
+					res.push(array[i]);
+			}
+			else
+			{
+				res = object;
+			}
+		}
+		else
+		{
+			res = Sk.ffi.remapToJs(object);
+		}
+		
+		return Sk.ffi.remapToPy(res);
+	}
+	
+	array_f.co_varnames = ['object','dtype','copy','order', 'subok', 'ndmin'];
+	array_f.$defaults = [null,Sk.builtin.none.none$,true,Sk.builtin.none.none$,false, 0];
+	mod.array = new Sk.builtin.func(array_f);
 	
 	return mod;
 }

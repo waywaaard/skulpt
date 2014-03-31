@@ -22,3 +22,10 @@ print a
 
 a = np.linspace(2.0, 3.0, 5, True, True)
 print a
+
+print ''
+print 'np.linspace(2.0, 3.0, num=5)'
+print np.linspace(2.0, 3.0, num=5, retstep=True)
+
+print ''
+print np.array([1,2,3,4])
