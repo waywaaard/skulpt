@@ -151,7 +151,7 @@ var $builtinmodule = function(name)
 	/* Simple reimplementation of the arange function 
 	 * http://docs.scipy.org/doc/numpy/reference/generated/numpy.arange.html#numpy.arange
 	 */
-	mod.arange = new Sk.builtin.func(function(start, stop, step, dtype) {
+	var arange_f = function(start, stop, step, dtype) {
         Sk.builtin.pyCheckArgs("arange", arguments, 1, 4);
         Sk.builtin.pyCheckType("start", "number", Sk.builtin.checkNumber(start));
 	
@@ -184,7 +184,11 @@ var $builtinmodule = function(name)
 
 		// return as list, dunno how to work with arrays.
 		return new Sk.builtin.list(np.arange(start_num, stop_num, step_num, type));
-    });
+    };
+	
+	arange_f.co_varnames = ['start', 'stop', 'step', 'dtype'];
+	arange_f.$defaults = [0,1,1,Sk.builtin.none.none$];
+	mod.arange = new Sk.builtin.func(arange_f);
 	
 	/* dummy implementation for numpy.array
 	------------------------------------------------------------------------------------------------
