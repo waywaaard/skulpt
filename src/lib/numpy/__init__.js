@@ -14,20 +14,58 @@ numpy.prototype.wrapasfloats = function(values)
 	}
 	
 	return values;
-}
+};
+
+numpy.prototype.zeros = function(shape, dtype, order)
+{
+	var res = shape;//this.array(shape);
+	this.fill(res, dtype, 0);
+	return res;
+};
+
+numpy.prototype.ones = function(shape, dtype, order)
+{
+	var res = shape;//this.array(shape);
+	this.fill(res, dtype, 1);
+	return res;
+};
+
+// fills a multidimensional array with the given val
+numpy.prototype.fill = function(array_like, dtype, val)
+{
+	if( Object.prototype.toString.call(array_like) === '[object Array]' ) {
+		for (var i = 0; i < array_like.length; ++i)
+		{
+			if(Object.prototype.toString.call(array_like[i]) === '[object Array]')
+			{			
+				array_like[i] = this.fill(array_like[i], dtype, val);
+			}
+			else
+			{
+				if(dtype === Sk.builtin.nmber.int$)
+					array_like[i] = int(val);
+				else
+					array_like[i] = val * 1.0;
+			}
+		}
+	}
+
+	return array_like;
+};
 
 numpy.prototype.array = function(length)
 {
-    var arr = new Array(length || 0),
-        i = length;
+    var arr = new Array(length || 0);
+    var i = length;
 
-    if (arguments.length > 1) {
+    if (arguments.length > 1) 
+	{
         var args = Array.prototype.slice.call(arguments, 1);
-        while(i--) arr[length-1 - i] = createArray.apply(this, args);
+        while(i--) arr[length-1 - i] = this.array.apply(this, args);
     }
 
     return arr;
-}
+};
 
 numpy.prototype.onarray = function(array, func)
 {
@@ -258,5 +296,89 @@ var $builtinmodule = function(name)
 	array_f.$defaults = [null,Sk.builtin.none.none$,true,Sk.builtin.none.none$,false, 0];
 	mod.array = new Sk.builtin.func(array_f);
 	
+	var zeros_f = function(shape, dtype, order)
+	{
+		Sk.builtin.pyCheckArgs("zeros", arguments, 1, 3);
+		
+		if(dtype instanceof Sk.builtin.list)
+		{
+			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) + "' is not supported for dtype.");
+		}
+		
+		// generate an array of the dimensions for the generic array method
+		var dims = [];
+		if(shape === undefined)
+		{
+			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(shape) + "' object is undefined while calling zeros");
+		}
+		else if(Sk.builtin.checkNumber(shape))
+		{
+			dims.push(Sk.builtin.asnum$(shape));
+		}
+		else if(shape instanceof Sk.builtin.tuple)
+		{
+			for(var i = 0; i < shape.v.length; i++)
+				dims.push(Sk.builtin.asnum$(shape.v[i]));
+		}
+		else 
+		{
+			for(var i = 0; i < shape.v.length; i++)
+				dims.push(Sk.builtin.asnum$(shape.v[i]));
+		}
+		
+		var res = np.array.apply(np, dims)
+		res = np.zeros(res, dtype, order);
+		
+		return Sk.ffi.remapToPy(res);
+	};
+	zeros_f.co_varnames = ['shape','dtype','order'];
+	zeros_f.$defaults = [0,Sk.builtin.none.none$,'C'];
+	mod.zeros = new Sk.builtin.func(zeros_f);
+	
+	var ones_f = function(shape, dtype, order)
+	{
+		Sk.builtin.pyCheckArgs("ones", arguments, 1, 3);
+		
+		if(dtype instanceof Sk.builtin.list)
+		{
+			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) + "' is not supported for dtype.");
+		}
+		
+		// generate an array of the dimensions for the generic array method
+		var dims = [];
+		if(shape === undefined)
+		{
+			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(shape) + "' object is undefined while calling ones");
+		}
+		else if(Sk.builtin.checkNumber(shape))
+		{
+			dims.push(Sk.builtin.asnum$(shape));
+		}
+		else if(shape instanceof Sk.builtin.tuple)
+		{
+			for(var i = 0; i < shape.v.length; i++)
+				dims.push(Sk.builtin.asnum$(shape.v[i]));
+		}
+		else 
+		{
+			for(var i = 0; i < shape.v.length; i++)
+				dims.push(Sk.builtin.asnum$(shape.v[i]));
+		}
+		
+		var res = np.array.apply(np, dims)
+		res = np.ones(res, dtype, order);
+		
+		return Sk.ffi.remapToPy(res);
+	};
+	ones_f.co_varnames = ['shape','dtype','order'];
+	ones_f.$defaults = [0,Sk.builtin.none.none$,'C'];
+	mod.ones = new Sk.builtin.func(ones_f);
+	
+	/* not implemented methods */
+	mod.ones_like = new Sk.builtin.func(function(){ throw new Sk.builtin.NotImplementedError("ones_like is not yet implemented")});
+	mod.empty_like = new Sk.builtin.func(function(){ throw new Sk.builtin.NotImplementedError("empty_like is not yet implemented")});
+	mod.ones_like = new Sk.builtin.func(function(){ throw new Sk.builtin.NotImplementedError("ones_like is not yet implemented")});
+	mod.empty = new Sk.builtin.func(function(){ throw new Sk.builtin.NotImplementedError("empty is not yet implemented")});
+	mod.asarray = new Sk.builtin.func(array_f);
 	return mod;
 }
