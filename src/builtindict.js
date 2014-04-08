@@ -73,6 +73,8 @@ Sk.builtins = {
 'jsmillis': Sk.builtin.jsmillis,
 'quit': Sk.builtin.quit,
 'exit': Sk.builtin.quit,
+'issubclass' : Sk.builtin.issubclass,
+'pow' : Sk.builtin.pow,
 
 // Functions below are not implemented
 'bytearray': Sk.builtin.bytearray,
@@ -86,12 +88,10 @@ Sk.builtins = {
 'frozenset' : Sk.builtin.frozenset,
 'globals' : Sk.builtin.globals,
 'help' : Sk.builtin.help,
-'issubclass' : Sk.builtin.issubclass,
 'iter': Sk.builtin.iter,
 'locals' : Sk.builtin.locals,
 'memoryview' : Sk.builtin.memoryview,
 'next' : Sk.builtin.next_,
-'pow' : Sk.builtin.pow,
 'property' : Sk.builtin.property,
 'reload' : Sk.builtin.reload,
 'reversed' : Sk.builtin.reversed,

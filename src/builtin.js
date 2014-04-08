@@ -943,6 +943,22 @@ Sk.builtin.quit = function quit(msg) {
     throw new Sk.builtin.SystemExit(s);
 }
 
+Sk.builtin.pow = function pow(x, y, z) {
+	Sk.builtin.pyCheckArgs("pow", arguments, 2, 3);
+	if (!Sk.builtin.checkNumber(x) || !Sk.builtin.checkNumber(y))
+	{
+		throw new Sk.builtin.TypeError("pow() arg 1 and 2 must be of a numeric type");
+	}
+	
+	var res = x.nb$power(y);
+	
+	if(z && Sk.builtin.checkNumber(z))
+	{
+		res = res.nb$remainder(z);
+	}
+	
+	return res;
+}
 
 Sk.builtin.issubclass = function issubclass(c1, c2) 
 { 
