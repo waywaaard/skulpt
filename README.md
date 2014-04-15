@@ -1,3 +1,29 @@
+#This fork adds:
+
+Python specific
+[*] __pow__ builtin
+[*] __issubclass__ builtin
+[*] __name__ attribute on classes/types
+
+numpy:
+[*] linspace
+[*] array - though it is just a dummy wrapper function
+[*] ones
+[*] zeros
+[*] arange
+[*] asarray that maps to array (no real functionality, though not needed on a python-js-interpreter)
+
+matplotlib:
+[] plot (partial implemented)
+[*] using d3js
+[] show (currently not working)
+
+math:
+[*] updated math module using mathjs.org
+
+complex:
+[] adding support for complex numbers (should rely on mathjs.org)
+
 # Welcome to Skulpt
 
 Skulpt is a Javascript implementation of Python 2.x.  Python that runs in your browser!  Python that runs on your iPad!  Its being used several projects including, [Interactive Python Textbooks](http://interactivepython.org) -- You can see skulpt in action there.  Try out [some turtle graphics examples](http://interactivepython.org/courselib/static/thinkcspy/PythonTurtle/helloturtle.html) to see Skulpt in action.
