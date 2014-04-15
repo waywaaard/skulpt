@@ -27,5 +27,13 @@ print ''
 print 'np.linspace(2.0, 3.0, num=5)'
 print np.linspace(2.0, 3.0, num=5, retstep=True)
 
-print ''
-print np.array([1,2,3,4])
+print 'np.array([1,2,3])'
+print np.array([1,2,3, 4])
+
+print 'np.zeros((2,1))'
+print np.zeros((2,1))
+
+print 'np.ones((2,2,3))'
+print np.ones((2,2,3))
+
+
