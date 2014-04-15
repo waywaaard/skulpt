@@ -1,28 +1,28 @@
 #This fork adds:
 
 Python specific
-[*] __pow__ builtin
-[*] __issubclass__ builtin
-[*] __name__ attribute on classes/types
+[x] __pow__ builtin
+[x] __issubclass__ builtin
+[x] __name__ attribute on classes/types
 
 numpy:
-[*] linspace
-[*] array - though it is just a dummy wrapper function
-[*] ones
-[*] zeros
-[*] arange
-[*] asarray that maps to array (no real functionality, though not needed on a python-js-interpreter)
+[x] linspace
+[x] array - though it is just a dummy wrapper function
+[x] ones
+[x] zeros
+[x] arange
+[x] asarray that maps to array (no real functionality, though not needed on a python-js-interpreter)
 
 matplotlib:
-[] plot (partial implemented)
-[*] using d3js
-[] show (currently not working)
+[ ] plot (partial implemented)
+[x] using d3js
+[ ] show (currently not working)
 
 math:
-[*] updated math module using mathjs.org
+[x] updated math module using mathjs.org
 
 complex:
-[] adding support for complex numbers (should rely on mathjs.org)
+[ ] adding support for complex numbers (should rely on mathjs.org)
 
 # Welcome to Skulpt
 
