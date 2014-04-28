@@ -952,9 +952,16 @@ Sk.builtin.pow = function pow(x, y, z) {
 	
 	var res = x.nb$power(y);
 	
-	if(z && Sk.builtin.checkNumber(z))
+	if(z)
 	{
-		res = res.nb$remainder(z);
+		if(Sk.builtin.checkNumber(z))
+		{
+			res = res.nb$remainder(z);
+		}
+		else
+		{
+			throw new Sk.builtin.TypeError("unsupported operand type(s) for pow(): '%s', '%s', '%s'" %(x.sk$type, y.sk$type, z.sk$type))
+		}		
 	}
 	
 	return res;
