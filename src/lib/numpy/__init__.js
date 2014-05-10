@@ -2,7 +2,15 @@
 
 var numpy = function()
 {
- // empty constructor
+	if(typeof mathjs == 'function')
+	{ 
+		// load mathjs instance
+		this.math = mathjs();
+	}
+	else
+	{
+		print("mathjs not included and callable");
+	}
 };
 
 numpy.prototype.wrapasfloats = function(values)
@@ -75,6 +83,26 @@ numpy.prototype.onarray = function(array, func)
 	}
 	
 	return array;
+};
+
+numpy.prototype.dot = function(a, b)
+{
+	if(math === undefined)
+	{
+		if(console !== undefined)
+			console.log("math object not defined");
+		
+		return null;
+	}
+
+	var res;
+	
+	var a_matrix = math.matrix(a);
+	var b_matrix = math.matrix(b);
+	
+	res = math.multiply(a_matrix, b_matrix);
+	
+	return res;
 };
 
 numpy.prototype.arange = function(start, stop, step, type)
@@ -373,6 +401,45 @@ var $builtinmodule = function(name)
 	ones_f.co_varnames = ['shape','dtype','order'];
 	ones_f.$defaults = [0,Sk.builtin.none.none$,'C'];
 	mod.ones = new Sk.builtin.func(ones_f);
+	
+	var dot_f = function(a, b)
+	{
+		Sk.builtin.pyCheckArgs("dot", arguments, 2, 2);
+		
+		if(!(a instanceof Sk.builtin.list) && !Sk.builtin.checkNumber(a))
+		{
+			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(a) + "' is not supported for a.");
+		}
+		
+		if(!(b instanceof Sk.builtin.list) && !Sk.builtin.checkNumber(b))
+		{
+			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(b) + "' is not supported for b.");
+		}
+
+		var res;
+
+		var a_matrix = Sk.ffi.remapToJs(a);
+		var b_matrix = Sk.ffi.remapToJs(b);
+
+		var a_size = np.math.size(a_matrix);
+		var b_size = np.math.size(b_matrix);
+		
+		
+		if(a_size.length >= 1 && b_size.length > 1)
+		{
+			if(a_size[a_size.length -1] != b_size[b_size-2])
+			{
+				throw new Sk.builtin.ValueError("The last dimension of a is not the same size as the second-to-last dimension of b.");
+			}
+		}
+		
+		res = np.math.multiply(a_matrix, b_matrix);
+		
+		return Sk.ffi.remapToPy(res);
+	};
+	dot_f.co_varnames = ['a','b'];
+	dot_f.$defaults = [Sk.builtin.none.none$,Sk.builtin.none.none$];
+	mod.dot = new Sk.builtin.func(dot_f);
 	
 	/* not implemented methods */
 	mod.ones_like = new Sk.builtin.func(function(){ throw new Sk.builtin.NotImplementedError("ones_like is not yet implemented")});
