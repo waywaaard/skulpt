@@ -883,6 +883,135 @@ jsplotlib.color = function(cs) {
 	return colors[cs] ?colors[cs] : colors['b'];
 };
 
+/* functions and parsing for linestyles, markers and colors */
+jsplotlib.parse_linestyle = function(style, plot) 
+{
+	if(!style || !plot) return false;
+	switch(style)
+	{
+		case '-': plot.line_style("-"); return true;
+		case '--': plot.line_style("--"); return true;
+		case '-.': plot.line_style("-."); return true;
+		case ':': plot.line_style(":"); return true;
+		case '': plot.line_style(""); return true;
+		case ' ': plot.line_style(""); return true;
+		default: return false;
+	}
+};
+
+jsplotlib.parse_marker = function(style, plot) 
+{
+	if(!style || !plot) return false;
+	switch(style)
+	{
+		case '.': plot.marker_style("x"); return true;
+		case ',': plot.marker_style("x"); return true;
+		case 'o': plot.marker_style("o"); return true;
+		case 'v': plot.marker_style("v"); return true;
+		case '^': plot.marker_style("x"); return true;
+		case '<': plot.marker_style("x"); return true;
+		case '>': plot.marker_style("x"); return true;
+		case '1': plot.marker_style("x"); return true;
+		case '2': plot.marker_style("x"); return true;
+		case '3': plot.marker_style("x"); return true;
+		case '4': plot.marker_style("x"); return true;
+		case 's': plot.marker_style("x"); return true;
+		case 'p': plot.marker_style("x"); return true;
+		case '*': plot.marker_style("x"); return true;
+		case 'h': plot.marker_style("x"); return true;
+		case 'H': plot.marker_style("x"); return true;
+		case '+': plot.marker_style("x"); return true;
+		case 'x': plot.marker_style("x"); return true;
+		case 'D': plot.marker_style("x"); return true;
+		case 'd': plot.marker_style("x"); return true;
+		case '|': plot.marker_style("x"); return true;
+		case '_': plot.marker_style("x"); return true;
+		default: return false;
+	}
+};
+
+jsplotlib.parse_color = function(style, plot) 
+{
+	if(!style || !plot) return false;
+	// unsupported at the moment
+	switch(style)
+	{
+		case 'b': plot.color_style('b'); return true;
+		case 'g': plot.color_style('g'); return true;
+		case 'r': plot.color_style('r'); return true;
+		case 'c': plot.color_style('c'); return true;
+		case 'm': plot.color_style('m'); return true;
+		case 'y': plot.color_style('y'); return true;
+		case 'k': plot.color_style('k'); return true;
+		case 'w': plot.color_style('w'); return true;
+		default: return false;
+	}
+};
+
+jsplotlib.parse_linecap = function(style, plot) 
+{
+	if(!style || !plot) return false;
+	// unsupported at the moment
+	switch(style)
+	{
+		case 'butt': plot.linecap_style('butt'); return true;
+		case 'round': plot.linecap_style('round'); return true;
+		case 'square': plot.linecap_style('square'); return true;
+		default: return false;
+	}
+};
+
+jsplotlib.parse_stylestring = function(str, plot)
+{
+	if(!str || !plot) return false;
+	
+	/*
+	1. if length == 1, try to parse color, linestyle, marker
+	2. if length == 2, try to parse linestyle (single)
+	3. if failed try to parse color + linestyle, marker
+	
+	4. if length == 3+, try to parse color, linestyle, marker
+	*/
+	
+	if(str.length === 1)
+	{
+		jsplotlib.parse_linestyle(str, plot);
+		jsplotlib.parse_marker(str, plot);
+		jsplotlib.parse_color(str, plot);
+	}
+	else if(str.length === 2)
+	{
+		if(!jsplotlib.parse_linestyle(str, plot))
+		{
+			// we have to split the string and see
+			jsplotlib.parse_linestyle(str[0], plot);
+			jsplotlib.parse_marker(str[0], plot);
+			jsplotlib.parse_color(str[0], plot);
+			jsplotlib.parse_linestyle(str[1], plot);
+			jsplotlib.parse_marker(str[1], plot);
+			jsplotlib.parse_color(str[1], plot);
+		}
+	} 
+	else if (str.length === 3)
+	{
+		// multiple possible combinations
+		// 1. color and 2 char linestyle
+		// 2. marker and 2 char linestyle
+		// 3. color, maker, linestyle
+		// TODO: should change this to exit early, when found a style
+		jsplotlib.parse_color(str[0], plot);
+		jsplotlib.parse_marker(str[0], plot);
+		jsplotlib.parse_marker(str[1], plot);
+		jsplotlib.parse_marker(str[2], plot);
+		jsplotlib.parse_linestyle(str[1], plot);
+		jsplotlib.parse_linestyle(str[2], plot);
+		jsplotlib.parse_linestyle(str.substr(1, 2), plot);
+	}
+	
+	return true;
+};
+
+
 
 var $builtinmodule = function(name)
 {
@@ -906,6 +1035,150 @@ var $builtinmodule = function(name)
 			chart = jsplotlib.make_chart(400, 400, "#" + Sk.canvas);
 		}
 	};
+	
+	var plotk_f = function(kwa)
+	{
+		debugger;
+		Sk.builtin.pyCheckArgs("plotk", arguments, 1, Infinity, true, false);
+		args = Array.prototype.slice.call(arguments, 1);
+		kwargs = new Sk.builtins['dict'](kwa); // is pretty useless for handling kwargs
+		kwargs = Sk.ffi.remapToJs(kwargs);
+		
+		// try parsing plot args
+		// possible xdata, ydata, stylestring
+		// or x1, y1, stylestring1, x2, y2, stylestring2
+		// or ydata, stylestring
+		/*
+			plot(x, y)        # plot x and y using default line style and color
+			plot(x, y, 'bo')  # plot x and y using blue circle markers
+			plot(y)           # plot y using x as index array 0..N-1
+			plot(y, 'r+')     # ditto, but with red plusses
+		*/
+		
+		// variable definitions for args
+		var xdata = [];
+		var ydata = [];
+		var stylestring = []; // we support only one at the moment
+		var i = 0;
+		var lines = 0;
+		var xdata_not_ydata_flag = true;
+		
+		for(i = 0; i < args.length; i++)
+		{
+			if(args[i] instanceof Sk.builtin.list)
+			{
+				// unwraps x and y, but no 2-dim-data
+				if(xdata_not_ydata_flag)
+				{
+					xdata.push(Sk.ffi.remapToJs(args[i]));
+					xdata_not_ydata_flag = false;
+				}
+				else
+				{
+					ydata.push(Sk.ffi.remapToJs(args[i]));
+					xdata_not_ydata_flag = true;
+				}
+			}
+			else if(Sk.builtin.checkString(args[i]))
+			{
+				stylestring.push(Sk.ffi.remapToJs(args[i]));
+			}
+			else
+			{
+				throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(args[i]) + "' is not supported for *args[" + i + "].");
+			}
+		}
+		
+		/* handle special cases
+			only supplied y
+			only supplied 1 array and stylestring
+		*/
+		if((args.length === 1) || (args.length === 2 && (xdata.length > 0 && ydata.length === 0)))
+		{
+			// only y supplied
+			xdata.forEach(function(element) {
+				ydata.push(element);
+			});
+			xdata = [];
+		}
+		
+		// empty canvas from previous plots
+		create_chart();
+		// create new plot instance, should be replaced with Line2D and then added to the plot
+		plot = jsplotlib.pplot(chart);
+		
+		// parse kwargs
+		var linestyle = kwargs['linestyle'];
+		var marker = kwargs['marker'];
+		var xdata = kwargs['xdata'] || xdata;
+		var ydata = kwargs['ydata'] || ydata;
+		var color = kwargs['color'];
+		var axes = kwargs['axes'];
+		var markersize = kwargs['markersize'];
+		var linewidth = kwargs['linewidth'];
+		var solid_capstyle = kwargs['solid_capstyle'];
+		var dash_capstyle = kwargs['dash_capstyle'];
+		var solid_joinstyle = kwargs['soild_joinstyle'];
+		var dash_joinstyle = kwargs['dash_joinstyle'];
+		var alpha = kwargs['alpha'];
+		
+		/* try to set the kwargs */
+		if(xdata)
+		{
+			if(xdata[0] && xdata[0].length)
+				plot.x(xdata[0]);
+			else
+				plot.x(Sk.ffi.remapToJs(xdata));
+		}
+		
+		if(ydata)
+		{
+			if(ydata[0] && ydata[0].length)
+				plot.y(ydata[0]);
+			else
+				plot.y(Sk.ffi.remapToJs(ydata));
+		}
+
+		// parse the 1st stylestring, we support only 1
+		// with Line2D impl, we can support multiple
+		if(stylestring.length > 0 )
+		{
+			jsplotlib.parse_stylestring(stylestring[0], plot)
+		}
+	
+		/* set various possible attributes */
+		if(markersize)
+			plot.marker_size(Sk.ffi.remapToJs(markersize));
+		
+		if(linewidth)
+			plot.line_width(Sk.ffi.remapToJs(linewidth));
+		
+		if(solid_capstyle)
+			plot.solid_capstyle(Sk.ffi.remapToJs(solid_capstyle));
+
+		if(dash_capstyle)
+			plot.dash_capstyle(dash_capstyle);
+		
+		if(solid_joinstyle)
+			plot.solid_joinstyle(Sk.ffi.remapToJs(solid_joinstyle));
+
+		if(dash_joinstyle)
+			plot.dash_joinstyle(Sk.ffi.remapToJs(dash_joinstyle));		
+		
+		if(alpha)
+			plot.alpha(Sk.ffi.remapToJs(alpha));
+		
+		
+		// result
+		var result = [];
+		result.push(Sk.ffi.remapToPy(xdata));
+		result.push(Sk.ffi.remapToPy(ydata));
+		result.push(Sk.ffi.remapToPy(stylestring));
+		
+		return new Sk.builtins['tuple'](result);
+	};
+	plotk_f['co_kwargs'] = true;
+	mod.plotk = new Sk.builtin.func(plotk_f);
 	
 	/****************************************************/
 	/*** Simple d3 based plot function implementation ***/
@@ -1058,8 +1331,6 @@ var $builtinmodule = function(name)
 		if(alpha)
 			alpha_unwrap = Sk.ffi.remapToJs(alpha);
 		
-		debugger;
-		
 		/* start plotting here */
 		
 		// create chart
@@ -1106,90 +1377,14 @@ var $builtinmodule = function(name)
 		if(alpha_unwrap)
 			plot.alpha(alpha_unwrap);
 		
-		/* functions and parsing for linestyles, markers and colors */
-		function parse_linestyle(style) 
-		{
-			if(!style) return false;
-			switch(style)
-			{
-				case '-': plot.line_style("-"); return true;
-				case '--': plot.line_style("--"); return true;
-				case '-.': plot.line_style("-."); return true;
-				case ':': plot.line_style(":"); return true;
-				case '': plot.line_style(""); return true;
-				case ' ': plot.line_style(""); return true;
-				default: return false;
-			}
-		};
-		
-		function parse_marker(style) 
-		{
-			if(!style) return false;
-			switch(style)
-			{
-				case '.': plot.marker_style("x"); return true;
-				case ',': plot.marker_style("x"); return true;
-				case 'o': plot.marker_style("o"); return true;
-				case 'v': plot.marker_style("v"); return true;
-				case '^': plot.marker_style("x"); return true;
-				case '<': plot.marker_style("x"); return true;
-				case '>': plot.marker_style("x"); return true;
-				case '1': plot.marker_style("x"); return true;
-				case '2': plot.marker_style("x"); return true;
-				case '3': plot.marker_style("x"); return true;
-				case '4': plot.marker_style("x"); return true;
-				case 's': plot.marker_style("x"); return true;
-				case 'p': plot.marker_style("x"); return true;
-				case '*': plot.marker_style("x"); return true;
-				case 'h': plot.marker_style("x"); return true;
-				case 'H': plot.marker_style("x"); return true;
-				case '+': plot.marker_style("x"); return true;
-				case 'x': plot.marker_style("x"); return true;
-				case 'D': plot.marker_style("x"); return true;
-				case 'd': plot.marker_style("x"); return true;
-				case '|': plot.marker_style("x"); return true;
-				case '_': plot.marker_style("x"); return true;
-				default: return false;
-			}
-		};
-		
-		function parse_color(style) 
-		{
-			if(!style) return false;
-			// unsupported at the moment
-			switch(style)
-			{
-				case 'b': plot.color_style('b'); return true;
-				case 'g': plot.color_style('g'); return true;
-				case 'r': plot.color_style('r'); return true;
-				case 'c': plot.color_style('c'); return true;
-				case 'm': plot.color_style('m'); return true;
-				case 'y': plot.color_style('y'); return true;
-				case 'k': plot.color_style('k'); return true;
-				case 'w': plot.color_style('w'); return true;
-				default: return false;
-			}
-		};
-		
-		function parse_linecap(style) 
-		{
-			if(!style) return false;
-			// unsupported at the moment
-			switch(style)
-			{
-				case 'butt': plot.linecap_style('butt'); return true;
-				case 'round': plot.linecap_style('round'); return true;
-				case 'square': plot.linecap_style('square'); return true;
-				default: return false;
-			}
-		};
+
 		
 		// try parsing the style string or linestyle, marker and color
 		if(!stylestring_unwrap)
 		{
-			parse_linestyle(linestyle_unwrap);
-			parse_marker(marker_unwrap);
-			parse_color(color_unwrap);
+			jsplotlib.parse_linestyle(linestyle_unwrap, plot);
+			jsplotlib.parse_marker(marker_unwrap, plot);
+			jsplotlib.parse_color(color_unwrap, plot);
 		}
 		else
 		{
@@ -1205,21 +1400,21 @@ var $builtinmodule = function(name)
 			{
 				if(stylestring_unwrap.length === 1)
 				{
-					parse_linestyle(stylestring_unwrap);
-					parse_marker(stylestring_unwrap);
-					parse_color(stylestring_unwrap);
+					jsplotlib.parse_linestyle(stylestring_unwrap, plot);
+					jsplotlib.parse_marker(stylestring_unwrap, plot);
+					jsplotlib.parse_color(stylestring_unwrap, plot);
 				}
 				else if(stylestring_unwrap.length === 2)
 				{
-					if(!parse_linestyle(stylestring_unwrap))
+					if(!jsplotlib.parse_linestyle(stylestring_unwrap, plot))
 					{
 						// we have to split the string and see
-						parse_linestyle(stylestring_unwrap[0]);
-						parse_marker(stylestring_unwrap[0]);
-						parse_color(stylestring_unwrap[0]);
-						parse_linestyle(stylestring_unwrap[1]);
-						parse_marker(stylestring_unwrap[1]);
-						parse_color(stylestring_unwrap[1]);
+						jsplotlib.parse_linestyle(stylestring_unwrap[0], plot);
+						jsplotlib.parse_marker(stylestring_unwrap[0], plot);
+						jsplotlib.parse_color(stylestring_unwrap[0], plot);
+						jsplotlib.parse_linestyle(stylestring_unwrap[1], plot);
+						jsplotlib.parse_marker(stylestring_unwrap[1], plot);
+						jsplotlib.parse_color(stylestring_unwrap[1], plot);
 					}
 				} 
 				else if (stylestring_unwrap.length === 3)
@@ -1228,13 +1423,13 @@ var $builtinmodule = function(name)
 					// 1. color and 2 char linestyle
 					// 2. marker and 2 char linestyle
 					// 3. color, maker, linestyle
-					parse_color(stylestring_unwrap[0]);
-					parse_marker(stylestring_unwrap[0]);
-					parse_marker(stylestring_unwrap[1]);
-					parse_marker(stylestring_unwrap[2]);
-					parse_linestyle(stylestring_unwrap[1]);
-					parse_linestyle(stylestring_unwrap[2]);
-					parse_linestyle(stylestring_unwrap.substr(1, 2));
+					jsplotlib.parse_color(stylestring_unwrap[0], plot);
+					jsplotlib.parse_marker(stylestring_unwrap[0], plot);
+					jsplotlib.parse_marker(stylestring_unwrap[1], plot);
+					jsplotlib.parse_marker(stylestring_unwrap[2], plot);
+					jsplotlib.parse_linestyle(stylestring_unwrap[1], plot);
+					jsplotlib.parse_linestyle(stylestring_unwrap[2], plot);
+					jsplotlib.parse_linestyle(stylestring_unwrap.substr(1, 2), plot);
 				}
 			}
 		}	
@@ -1375,7 +1570,7 @@ var $builtinmodule = function(name)
 			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(X) + "' is not supported for X.");
 		}
 		
-		plot = imshow(chart);
+		plot = jsplotlib.imshow(chart);
         plot.data(Sk.ffi.remapToJs(X));
         plot.colormap_jet(); // the standard matlab colormap
 	};
