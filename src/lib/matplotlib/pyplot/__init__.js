@@ -5,6 +5,95 @@ var jsplotlib = {
 
 var chart_counter = 0; // for creating unique ids
 
+Line2D = function(xdata, ydata, linewidth, linestyle, color, marker,
+					markersize,markeredgewidth,markeredgecolor, markerfacecolor,
+					markerfacecoloralt, fillstyle, antialiased, dash_capstyle,
+					solid_capstyle, dash_joinstyle, solid_joinstyle,	pickradius,
+					drawstyle,	markevery,	kwargs) {
+	var self = this;
+	this.xdata = xdata;
+	this.ydata = ydata;
+	this.linewidth = linewidth || null;
+	this.linestyle = linestyle || null;
+	this.color = color || null;
+	this.marker = marker || null;
+	this.markersize = markersize || null;
+	this.markeredgewidth = markeredgewidth || null;
+	this.markeredgecolor = markeredgecolor || null;
+	this.markerfacecolor = markerfacecolor || null;
+	this.markerfacecoloralt = markerfacecoloralt || 'none';
+	this.fillstyle = fillstyle || 'full';
+	this.antialiased = antialiased || null;
+	this.dash_capstyle = dash_capstyle || null;
+	this.solid_capstyle = solid_capstyle || null;
+	this.dash_joinstyle = dash_joinstyle || null;
+	this.solid_joinstyle = solid_joinstyle || null;
+	this.pickradius = pickradius || 5;
+	this.drawstyle = drawstyle || null;
+	this.markevery = markevery || null;
+	//kwargs
+};
+
+/** List of all supported line styles **/
+Line2D.lineStyles = {
+	'-':    '_draw_solid',
+	'--':   '_draw_dashed',
+	'-.':   '_draw_dash_dot',
+	':':    '_draw_dotted',
+	'None': '_draw_nothing',
+	' ':    '_draw_nothing',
+	'':     '_draw_nothing',
+};
+
+Line2D.lineMarkers = {
+        '.': 'point',
+        ',': 'pixel',
+        'o': 'circle',
+        'v': 'triangle_down',
+        '^': 'triangle_up',
+        '<': 'triangle_left',
+        '>': 'triangle_right',
+        '1': 'tri_down',
+        '2': 'tri_up',
+        '3': 'tri_left',
+        '4': 'tri_right',
+        '8': 'octagon',
+        's': 'square',
+        'p': 'pentagon',
+        '*': 'star',
+        'h': 'hexagon1',
+        'H': 'hexagon2',
+        '+': 'plus',
+        'x': 'x',
+        'D': 'diamond',
+        'd': 'thin_diamond',
+        '|': 'vline',
+        '_': 'hline',
+        //TICKLEFT: 'tickleft',
+        //TICKRIGHT: 'tickright',
+        //TICKUP: 'tickup',
+        //TICKDOWN: 'tickdown',
+        //CARETLEFT: 'caretleft',
+        //CARETRIGHT: 'caretright',
+        //CARETUP: 'caretup',
+        //CARETDOWN: 'caretdown',
+        "None": 'nothing',
+        //Sk.builtin.none.none$: 'nothing',
+        ' ': 'nothing',
+        '': 'nothing'
+};
+
+Line2D.colors = {
+	'b': 'blue',
+    'g': 'green',
+    'r': 'red',
+    'c': 'cyan',
+    'm': 'magenta',
+    'y': 'yellow',
+    'k': 'black',
+    'w': 'white'
+};
+
 jsplotlib.make_chart = function(width, height, where_to_insert, how_to_insert, attributes) 
 {
 	chart_counter++;
@@ -508,6 +597,11 @@ jsplotlib.pplot = function(chart)
 		return this;
 	};
 	
+	that.marker_facecolor = function(mfc) {
+		this._marker_facecolor = mfc;
+		return this;
+	};
+	
 	that.line_style = function(ls) {
 		this._line_style = ls;
 		return this;
@@ -524,6 +618,10 @@ jsplotlib.pplot = function(chart)
 		var N = this._y.length || this._x.length;
 		if (this._line_style === undefined) {
 			this._line_style = "-";
+		}
+		
+		if(this._color_style === undefined) {
+			this._color_style = jsplotlib.color('');
 		}
 		
 		// set defaults for all attributes
@@ -549,6 +647,11 @@ jsplotlib.pplot = function(chart)
 		
 		if(this._dash_joinstyle === undefined) {
 			this._dash_joinstyle = "miter";
+		}
+		
+		// default markerfacecolor is linecolor
+		if(this._marker_facecolor === undefined) {
+			this._marker_facecolor = this._color_style;
 		}
 		
 		if(this._alpha === undefined) {
@@ -737,9 +840,9 @@ jsplotlib.pplot = function(chart)
 			};
 		};
 		this._markers
-		.style("stroke", jsplotlib.color(this._color_style))
+		.style("stroke", jsplotlib.color(this._marker_facecolor))
 		.style("stroke-opacity", this._alpha)
-		.style("fill", jsplotlib.color(this._color_style))
+		.style("fill", jsplotlib.color(this._marker_facecolor))
 		.on("mouseover", resize_function(1.25))
 		.on("mouseout", resize_function(.8));
 		this._draw_axes();
@@ -791,66 +894,6 @@ jsplotlib.color = function(cs) {
 	};
 	
 	return colors[cs] ? colors[cs] : colors['b'];
-};
-
-/** List of all supported line styles **/
-jsplotlib.lineStyles = {
-	'-':    '_draw_solid',
-	'--':   '_draw_dashed',
-	'-.':   '_draw_dash_dot',
-	':':    '_draw_dotted',
-	'None': '_draw_nothing',
-	' ':    '_draw_nothing',
-	'':     '_draw_nothing',
-};
-
-jsplotlib.lineMarkers = {
-        '.': 'point',
-        ',': 'pixel',
-        'o': 'circle',
-        'v': 'triangle_down',
-        '^': 'triangle_up',
-        '<': 'triangle_left',
-        '>': 'triangle_right',
-        '1': 'tri_down',
-        '2': 'tri_up',
-        '3': 'tri_left',
-        '4': 'tri_right',
-        '8': 'octagon',
-        's': 'square',
-        'p': 'pentagon',
-        '*': 'star',
-        'h': 'hexagon1',
-        'H': 'hexagon2',
-        '+': 'plus',
-        'x': 'x',
-        'D': 'diamond',
-        'd': 'thin_diamond',
-        '|': 'vline',
-        '_': 'hline',
-        //TICKLEFT: 'tickleft',
-        //TICKRIGHT: 'tickright',
-        //TICKUP: 'tickup',
-        //TICKDOWN: 'tickdown',
-        //CARETLEFT: 'caretleft',
-        //CARETRIGHT: 'caretright',
-        //CARETUP: 'caretup',
-        //CARETDOWN: 'caretdown',
-        "None": 'nothing',
-        //Sk.builtin.none.none$: 'nothing',
-        ' ': 'nothing',
-        '': 'nothing'
-};
-
-jsplotlib.colors = {
-	'b': 'blue',
-    'g': 'green',
-    'r': 'red',
-    'c': 'cyan',
-    'm': 'magenta',
-    'y': 'yellow',
-    'k': 'black',
-    'w': 'white'
 };
 
 /* functions and parsing for linestyles, markers and colors */
@@ -970,17 +1013,17 @@ jsplotlib._process_plot_format = function(fmt) {
 	var i;
 	for(i = 0; i < fmt.length; i++) {
 		var c = fmt.charAt(i);
-		if(jsplotlib.lineStyles[c]){
+		if(Line2D.lineStyles[c]){
 			if(linestyle) {
 				throw new Sk.builtin.ValueError('Illegal format string "' + fmt + '"; two linestyle symbols');
 			}
 			linestyle = c;
-		} else if(jsplotlib.lineMarkers[c]) {
+		} else if(Line2D.lineMarkers[c]) {
 			if(marker) {
 				throw new Sk.builtin.ValueError('Illegal format string "' + fmt + '"; two marker symbols');
 			}
 			marker = c;
-		} else if(jsplotlib.colors[c]) {
+		} else if(Line2D.colors[c]) {
 			if(color) {
 				throw new Sk.builtin.ValueError('Illegal format string "' + fmt + '"; two color symbols');
 			}
@@ -1017,7 +1060,7 @@ var $builtinmodule = function(name)
 	
 	var mod = {};
 	var chart;
-	var plot;
+	var plot; // TODO, we should support multiple lines here
 	var canvas;
 	
 	var create_chart = function()
@@ -1045,6 +1088,7 @@ var $builtinmodule = function(name)
 			- color
 			- axes
 			- markersize
+			- markerfacecolor
 			- linewidth
 			- solid_capstyle
 			- dash_capstyle
@@ -1133,6 +1177,7 @@ var $builtinmodule = function(name)
 		var color = kwargs['color'];
 		var axes = kwargs['axes'];
 		var markersize = kwargs['markersize'];
+		var markerfacecolor = kwargs['markerfacecolor'];
 		var linewidth = kwargs['linewidth'];
 		var solid_capstyle = kwargs['solid_capstyle'];
 		var dash_capstyle = kwargs['dash_capstyle'];
@@ -1169,25 +1214,28 @@ var $builtinmodule = function(name)
 	
 		/* set various possible attributes */
 		if(markersize)
-			plot.marker_size(Sk.ffi.remapToJs(markersize));
+			plot.marker_size(markersize);
+		
+		if(markerfacecolor)
+			plot.marker_facecolor(markerfacecolor);
 		
 		if(linewidth)
-			plot.line_width(Sk.ffi.remapToJs(linewidth));
+			plot.line_width(linewidth);
 		
 		if(solid_capstyle)
-			plot.solid_capstyle(Sk.ffi.remapToJs(solid_capstyle));
+			plot.solid_capstyle(solid_capstyle);
 
 		if(dash_capstyle)
 			plot.dash_capstyle(dash_capstyle);
 		
 		if(solid_joinstyle)
-			plot.solid_joinstyle(Sk.ffi.remapToJs(solid_joinstyle));
+			plot.solid_joinstyle(solid_joinstyle);
 
 		if(dash_joinstyle)
-			plot.dash_joinstyle(Sk.ffi.remapToJs(dash_joinstyle));		
+			plot.dash_joinstyle(dash_joinstyle);		
 		
 		if(alpha)
-			plot.alpha(Sk.ffi.remapToJs(alpha));
+			plot.alpha(alpha);
 		
 		
 		// result
