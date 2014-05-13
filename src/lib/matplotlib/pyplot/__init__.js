@@ -195,11 +195,11 @@ jsplotlib.construct_axis = function()
 			var newmax;
 			if (oldmax instanceof Date) 
 			{
-			  newmax = new Date(oldmax.getTime() + plus);
+				newmax = new Date(oldmax.getTime() + plus);
 			} 
 			else 
 			{
-			  newmax = oldmax + plus;
+				newmax = oldmax + plus;
 			}
 			this._set_data_range([ min, newmax ]);
 		};
@@ -329,100 +329,106 @@ jsplotlib.construct_graph = function(chart)
 	that._xaxis = jsplotlib.construct_axis(that, "x");
 	that._yaxis = jsplotlib.construct_axis(that, "y");
 	that._axes = [ that._xaxis, that._yaxis ];
+	
+	// setter functions
 	that.data = function(d) {
-	  this._data = d;
-	  return this;
+		this._data = d;
+		return this;
 	};
 	that.xlabel = function(xl) {
-	  this._xaxis.set_label(xl);
-	  return this;
+		this._xaxis.set_label(xl);
+		return this;
 	};
 	that.ylabel = function(yl) {
-	  this._yaxis.set_label(yl);
-	  return this;
+		this._yaxis.set_label(yl);
+		return this;
 	};
 	that.xaxis_off = function() {
-	  this._xaxis._turn_off();
-	  return this;
+		this._xaxis._turn_off();
+		return this;
 	};
 	that.yaxis_off = function() {
-	  this._yaxis._turn_off();
-	  return this;
+		this._yaxis._turn_off();
+		return this;
 	};
 	that.xaxis_on = function() {
-	  this._xaxis._turn_on();
-	  return this;
+		this._xaxis._turn_on();
+		return this;
 	};
 	that.yaxis_on = function() {
-	  this._yaxis._turn_on();
-	  return this;
+		this._yaxis._turn_on();
+		return this;
 	};
 	that.axis_on = function() {
-	  this.yaxis_on();
-	  this.xaxis_on();
-	  return this;
+		this.yaxis_on();
+		this.xaxis_on();
+		return this;
 	};
 	that.axis_off = function() {
-	  this.yaxis_off();
-	  this.xaxis_off();
-	  return this;
+		this.yaxis_off();
+		this.xaxis_off();
+		return this;
 	};
 	that.title = function(title_string) {
-	  this._title_string = title_string;
-	  this._title_size = this._chartheight * .1;
-	  this._title_transform_string = "translate(" + this._chartwidth / 2 + "," + this._title_size / 2 + ")";
-	  return this;
+		this._title_string = title_string;
+		this._title_size = this._chartheight * .1;
+		this._title_transform_string = "translate(" + this._chartwidth / 2 + "," + this._title_size / 2 + ")";
+		return this;
 	};
 	that._ylimits = function(minmax) {
-	  this._yaxis._set_data_range(minmax);
-	  return this;
+		this._yaxis._set_data_range(minmax);
+		return this;
 	};
 	that._xlimits = function(minmax) {
-	  this._xaxis._set_data_range(minmax);
-	  return this;
+		this._xaxis._set_data_range(minmax);
+		return this;
 	};
 	that.yformat = function(formatter) {
-	  this._yaxis._set_formatter(formatter);
-	  return this;
+		this._yaxis._set_formatter(formatter);
+		return this;
 	};
 	that.xformat = function(formatter) {
-	  this._xaxis._set_formatter(formatter);
-	  return this;
+		this._xaxis._set_formatter(formatter);
+		return this;
 	};
 	that.get_yscale = function() {
-	  return this._yaxis.get_scale();
+		return this._yaxis.get_scale();
 	};
 	that.get_xscale = function() {
-	  return this._xaxis.get_scale();
+		return this._xaxis.get_scale();
 	};
+	
+	// creates axes
 	that._init_common = function() {
-	  for (var i = 0; i < 2; i++) {
-		this._axes[i]._init(this);
-	  }
-	  this._height = this._chartheight - this._xaxis._size;
-	  this._width = this._chartwidth - this._yaxis._size;
-	  return this;
+		for (var i = 0; i < 2; i++) {
+			this._axes[i]._init(this);
+		}
+		this._height = this._chartheight - this._xaxis._size;
+		this._width = this._chartwidth - this._yaxis._size;
+		return this;
 	};
+	
+	// draw axes and append graph title
 	that._draw_axes = function() {
-	  for (var i = 0; i < 2; i++) {
-		this._axes[i]._draw_axis(this);
-		this._axes[i]._draw_label(this);
-	  }
-	  var myselector = "#" + chart.attr("id") + " .axis line, #" + chart.attr("id") + " .axis path";
-	  $(myselector).css("fill", "none").css("stroke", "#000");
-	  d3.svg.axis(chart);
-	  if (this._title_string !== "") {
-		that.chart.append("svg:g").attr("class", "graph_title").attr("transform", this._title_transform_string).append("text").append("tspan").attr("text-anchor", "middle").attr("class", "graph_title").attr("writing-mode", "rl-tb").text(this._title_string);
-	  }
-	  return this;
+		for (var i = 0; i < 2; i++) {
+			this._axes[i]._draw_axis(this);
+			this._axes[i]._draw_label(this);
+		}
+		var myselector = "#" + chart.attr("id") + " .axis line, #" + chart.attr("id") + " .axis path";
+		$(myselector).css("fill", "none").css("stroke", "#000");
+		d3.svg.axis(chart);
+		if (this._title_string !== "") {
+			that.chart.append("svg:g").attr("class", "graph_title").attr("transform", this._title_transform_string).append("text").append("tspan").attr("text-anchor", "middle").attr("class", "graph_title").attr("writing-mode", "rl-tb").text(this._title_string);
+		}
+		return this;
 	};
 	var chart_id = that.chart.attr("id");
 	that.resize_function = function(resize_amount, direction) {
 	  return function() {
 		var node = this;
 		while (node.id !== chart_id) {
-		  node.parentNode.appendChild(node);
-		  node = node.parentNode;
+			node.parentNode.appendChild(node);
+			node = node.parentNode;
 		}
 		var object = d3.select(this);
 		var x0 = parseInt(object.attr("x") || "0", 10);
@@ -431,34 +437,38 @@ jsplotlib.construct_graph = function(chart)
 		var height0 = parseInt(object.attr("height"), 10);
 		var newwidth, newheight, newx, newy;
 		if (direction === "grow") {
-		  object.attr("x_orig", x0).attr("y_orig", y0).attr("width_orig", width0).attr("height_orig", height0);
-		  newwidth = width0 * resize_amount;
-		  newheight = height0 * resize_amount;
-		  newx = x0 - (resize_amount - 1) * width0 / 2;
-		  newy = y0 - (resize_amount - 1) * height0 / 2;
+			object.attr("x_orig", x0).attr("y_orig", y0).attr("width_orig", width0).attr("height_orig", height0);
+			newwidth = width0 * resize_amount;
+			newheight = height0 * resize_amount;
+			newx = x0 - (resize_amount - 1) * width0 / 2;
+			newy = y0 - (resize_amount - 1) * height0 / 2;
 		} else if (direction === "shrink") {
-		  newwidth = object.attr("width_orig");
-		  newheight = object.attr("height_orig");
-		  newx = object.attr("x_orig");
-		  newy = object.attr("y_orig");
+			newwidth = object.attr("width_orig");
+			newheight = object.attr("height_orig");
+			newx = object.attr("x_orig");
+			newy = object.attr("y_orig");
 		}
 		object.attr("x", newx).attr("y", newy).attr("height", newheight).attr("width", newwidth);
 	  };
 	};
+	
 	that.x = function(x) {
 	  this._x = x;
 	  this._xlimits([ d3.min(x), d3.max(x) ]);
 	  return this;
 	};
+	
 	that.y = function(y) {
 	  this._y = y;
 	  this._ylimits([ d3.min(y), d3.max(y) ]);
 	  return this;
 	};
+	
 	that.xrange = function(min, max, N) {
 	  this.x(jsplotlib.linspace(min, max, N));
 	  return this;
 	};
+	
 	that.yrange = function(min, max, N) {
 	  this.y(jsplotlib.linspace(min, max, N));
 	  return this;
@@ -614,8 +624,9 @@ jsplotlib.pplot = function(chart)
 	
 	that.draw = function() {
 		this._init_common();
-		var s_was_set = true;
+		var s_was_set = true; // used for scatter plotts
 		var N = this._y.length || this._x.length;
+		
 		if (this._line_style === undefined) {
 			this._line_style = "-";
 		}
@@ -658,9 +669,12 @@ jsplotlib.pplot = function(chart)
 			this._alpha = 1;
 		}
 		
+		// if only y provided, create Array from 1 to N
 		if (!this._x) {
 			this.xrange(1, N, N);
 		}
+		
+		// used for scatter plots
 		if (!this._s) {
 			var siz;
 			if (!this._marker_style || this._marker_style === ".") {
@@ -670,19 +684,28 @@ jsplotlib.pplot = function(chart)
 			}
 			this.s(siz);
 		}
+		
 		var x = this._x;
 		var s = this._s;
 		var y = this._y;
+		
+		// create array of point pairs with optional s value
+		// from [x1,x2], [y1, y2], [s1, s2]
+		// to [[x1,y1,s1],[x2,y2,s2]]
 		var xys = d3.zip(x, y, s);
 		var pairs = d3.zip(xys.slice(0, -1), xys.slice(1));
 		var xscale = this.get_xscale();
 		var yscale = this.get_yscale();
+		
 		var xformat = this._xaxis._formatter || function(x) {
 			return x;
 		};
+		
 		var yformat = this._yaxis._formatter || function(x) {
 			return x;
 		};
+		
+		// this adds the line to the chart
 		this._line_containers = chart.selectAll("g.pplot_lines").data(pairs).enter().append("g").attr("class", "pplot_lines");
 	  
 	  // set appropriate line style
@@ -773,6 +796,7 @@ jsplotlib.pplot = function(chart)
 		.style("stroke-dasharray", "5, 5, 2, 5");
 	  }
 	  
+	  // append points
 	  this._points = chart.selectAll("g.pplot_points").data(xys).enter().append("g").attr("x", function(d) {
 		return d[0];
 	  }).attr("y", function(d) {
@@ -780,19 +804,24 @@ jsplotlib.pplot = function(chart)
 	  }).attr("s", function(d) {
 		return d[2];
 	  }).attr("class", "pplot_points");
+	  
 	  var s_was_set = this._s_was_set;
+	  
+	  // init hover popups
 	  $("#" + chart.attr("id") + " g.pplot_points").tipsy({
 		gravity: "nw",
 		html: true,
 		title: function() {
-		  var d = this.__data__;
-		  var output = "(" + xformat(d[0]) + "," + yformat(d[1]) + ")";
-		  if (s_was_set) {
-			output += ": " + d[2];
-		  }
-		  return output;
+			var d = this.__data__;
+			var output = "(" + xformat(d[0]) + "," + yformat(d[1]) + ")";
+			if (s_was_set) {
+				output += ": " + d[2];
+			}
+			return output;
 		}
 	  });
+	  
+	  // set appropriate marker styles
 	  switch (this._marker_style) {
 		case undefined:
 		case ".":
@@ -839,10 +868,13 @@ jsplotlib.pplot = function(chart)
 				}
 			};
 		};
+		
+		// add marker attributes
 		this._markers
 		.style("stroke", jsplotlib.color(this._marker_facecolor))
 		.style("stroke-opacity", this._alpha)
 		.style("fill", jsplotlib.color(this._marker_facecolor))
+		.style("marker", 
 		.on("mouseover", resize_function(1.25))
 		.on("mouseout", resize_function(.8));
 		this._draw_axes();
