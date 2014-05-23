@@ -284,6 +284,9 @@ var $builtinmodule = function(name)
 	*/
 	var array_f = function(object, dtype, copy, order, subok, ndmin)
 	{
+		// https://github.com/geometryzen/davinci-dev/blob/master/src/stdlib/numpy.js
+		// https://github.com/geometryzen/davinci-dev/blob/master/src/ffh.js
+		// http://docs.scipy.org/doc/numpy/reference/arrays.html
 		if(object === undefined)
 			throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(object) + "' object is undefined");
 		
