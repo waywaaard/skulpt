@@ -239,7 +239,7 @@ var $builtinmodule = function(name) {
       ndarrayJs.shape = Sk.ffi.remapToJs(shape);
 
       ndarrayJs.strides = computeStrides(ndarrayJs.shape);
-      ndarrayJs.dtype = dtype;
+      ndarrayJs.dtype = dtype || Sk.builtin.none.none$;
 
       if (buffer && buffer instanceof Sk.builtin.list) {
         ndarrayJs.buffer = Sk.ffi.remapToJs(buffer);
@@ -250,27 +250,32 @@ var $builtinmodule = function(name) {
     });
 
     $loc.__getattr__ = new Sk.builtin.func(function(self, name) {
-      var ndarrayJs = Sk.ffi.remapToJs(self);
+      var _ndarray = Sk.ffi.remapToJs(self);
       // TODO: implement this
       switch (name) {
         case 'dtype':
-          return ndarrayJs.dtype;
+          return _ndarray.dtype;
         case 'ndim':
-          return new Sk.builtin.int_(ndarrayJs.shape.length);
+          return new Sk.builtin.int_(_ndarray.shape.length);
         case 'shape':
-          return new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+          return new Sk.builtin.tuple(_ndarray.shape.map(function(x) {
             return new Sk.builtin.int_(x);
           }));
         case 'size':
-          return new Sk.builtin.int_(prod(ndarrayJs.shape));
+          return new Sk.builtin.int_(prod(_ndarray.shape));
         case 'strides':
-          return new Sk.builtin.tuple(ndarrayJs.strides.map(function(x) {
+          return new Sk.builtin.tuple(_ndarray.strides.map(function(x) {
             return new Sk.builtin.int_(x);
           }));
         case 'buffer':
-          return new Sk.builtin.list(ndarrayJs.buffer);
+          return new Sk.ffi.remapToPy(_ndarray.buffer);
 
         default:
+					Sk.debugout("--> default");
+					var descr = Sk.builtin.type.typeLookup(self.ob$type, name);
+					if(descr)
+						return Sk.misceval.callsim(descr, self);
+					
           throw new Sk.builtin.AttributeError('Attribute "' + name +
             '" is not getable on type "' + CLASS_NDARRAY + '"');
       }
@@ -281,6 +286,8 @@ var $builtinmodule = function(name) {
       var buffer = ndarrayJs.buffer.map(function(x) {
         return x;
       });
+		
+			debugger;
       return new Sk.builtin.list(buffer);
     });
 
@@ -321,6 +328,7 @@ var $builtinmodule = function(name) {
     });
 
     $loc.__getitem__ = new Sk.builtin.func(function(self, index) {
+      Sk.builtin.pyCheckArgs("[]", arguments, 2, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
       // TODO: implement this
       return index;
