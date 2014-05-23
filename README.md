@@ -1,22 +1,31 @@
 #This fork adds:
 
 Python specific
-- [x] __pow__ builtin
 - [x] __issubclass__ builtin
 - [x] __name__ attribute on classes/types
 
 numpy:
+- [x] ndarray (working, missing functions)
 - [x] linspace
-- [x] array - though it is just a dummy wrapper function
+- [x] array 
 - [x] ones
 - [x] zeros
 - [x] arange
 - [x] asarray that maps to array (no real functionality, though not needed on a python-js-interpreter)
 
 matplotlib:
-- [ ] plot (partial implemented)
+- [x] plot(*args, **kwargs) with multiple lines
 - [x] using d3js
-- [ ] show (currently not working)
+- [x] show 
+- [x] kwargs
+- [x] all color specs
+- [x] color cycle
+- [x] rc params
+- [x] '.', 'o', 'x', 's' markers
+- [x] resize function for markers
+- [x] '-', '--', '.-' line styles
+- [x] various Line2D attributes
+- [x] auto scaling for axes
 
 math:
 - [x] updated math module using mathjs.org
