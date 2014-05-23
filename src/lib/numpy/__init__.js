@@ -162,7 +162,6 @@ var $builtinmodule = function(name) {
   }
 
   function computeStrides(shape) {
-		Sk.debugout("computeStrides: " + shape);
     var strides = shape.slice(0);
     strides.reverse();
     var prod = 1;
@@ -184,15 +183,19 @@ var $builtinmodule = function(name) {
     return offset;
   }
 
+  /**
+    Calculates the size of the ndarray, dummy
+	**/
   function prod(numbers) {
     var size = 1;
-    for (var i = 0, len = numbers.length; i < len; i++) {
+    var i;
+    for (i = 0; i < numbers.length; i++) {
       size *= numbers[i];
     }
     return size;
   }
-	
-	/** 
+
+  /**
 		Creates a string representation for given buffer and shape
 		buffer is an ndarray
 	**/
@@ -249,7 +252,72 @@ var $builtinmodule = function(name) {
     $loc.__getattr__ = new Sk.builtin.func(function(self, name) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       // TODO: implement this
-      return name;
+      switch (name) {
+        case 'dtype':
+          return ndarrayJs.dtype;
+        case 'ndim':
+          return new Sk.builtin.int_(ndarrayJs.shape.length);
+        case 'shape':
+          return new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+            return new Sk.builtin.int_(x);
+          }));
+        case 'size':
+          return new Sk.builtin.int_(prod(ndarrayJs.shape));
+        case 'strides':
+          return new Sk.builtin.tuple(ndarrayJs.strides.map(function(x) {
+            return new Sk.builtin.int_(x);
+          }));
+        case 'buffer':
+          return new Sk.builtin.list(ndarrayJs.buffer);
+
+        default:
+          throw new Sk.builtin.AttributeError('Attribute "' + name +
+            '" is not getable on type "' + CLASS_NDARRAY + '"');
+      }
+    });
+
+    $loc.tolist = new Sk.builtin.func(function(self) {
+      var ndarrayJs = Sk.ffi.remapToJs(self);
+      var buffer = ndarrayJs.buffer.map(function(x) {
+        return x;
+      });
+      return new Sk.builtin.list(buffer);
+    });
+
+    $loc.reshape = new Sk.builtin.func(function(self, shape, order) {
+      Sk.builtin.pyCheckArgs("reshape", arguments, 2, 3);
+      var ndarrayJs = Sk.ffi.remapToJs(self);
+      return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, ndarrayJs.dtype,
+        new Sk.builtin.list(ndarrayJs.buffer));
+    });
+
+    $loc.copy = new Sk.builtin.func(function(self, order) {
+      Sk.builtin.pyCheckArgs("copy", arguments, 1, 2);
+      var ndarrayJs = Sk.ffi.remapToJs(self);
+      var buffer = ndarrayJs.buffer.map(function(x) {
+        return x;
+      });
+      var shape = new Sk.builtin.tuplePy(ndarrayJs.shape.map(function(x) {
+        return new Sk.builtin.int_(x);
+      }));
+      return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, ndarrayJs.dtype,
+        new Sk.builtin.list(buffer));
+    });
+
+    $loc.fill = new Sk.builtin.func(function(self, value) {
+      Sk.builtin.pyCheckArgs("fill", arguments, 2, 2);
+      var ndarrayJs = Sk.ffi.remapToJs(self);
+      var buffer = ndarrayJs.buffer.map(function(x) {
+        return x;
+      });
+      var i;
+      for (i = 0; i < ndarrayJs.buffer.length; i++) {
+        if (ndarrayJs.dtypePy) {
+          ndarrayJs.buffer[i] = Sk.misceval.callsim(ndarrayJs.dtypePy,
+            valuePy);
+        }
+      }
+      return new Sk.builtin.list(buffer);
     });
 
     $loc.__getitem__ = new Sk.builtin.func(function(self, index) {
@@ -553,7 +621,7 @@ var $builtinmodule = function(name) {
     var state = {};
     state.level = 0;
     state.shape = [];
-		//debugger;
+    //debugger;
     unpack(object, elements, state);
 
     // apply dtype casting function, if it has been provided
