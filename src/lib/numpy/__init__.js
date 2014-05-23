@@ -74,7 +74,7 @@ numpy.prototype.onarray = function(array, func) {
 numpy.prototype.dot = function(a, b) {
   if (math === undefined) {
     if (console !== undefined)
-      console.log("math object not defined");
+      Sk.debugout("math object not defined");
 
     return null;
   }
@@ -191,7 +191,11 @@ var $builtinmodule = function(name) {
     }
     return size;
   }
-
+	
+	/** 
+		Creates a string representation for given buffer and shape
+		buffer is an ndarray
+	**/
   function stringify(buffer, shape) {
     var emits = shape.map(function(x) {
       return 0;
@@ -210,7 +214,7 @@ var $builtinmodule = function(name) {
           str += "[";
           idxLevel += 1;
         } else {
-          str += Sk.ffi.remapToJs(Sk.ffh.str(buffer[i++]));
+          str += Sk.ffi.remapToJs(Sk.builtin.str(buffer[i++]));
           emits[idxLevel] += 1;
         }
       } else {
@@ -230,7 +234,7 @@ var $builtinmodule = function(name) {
       offset, strides, order) {
       var ndarrayJs = {}; // js object holding the actual array
       ndarrayJs.shape = Sk.ffi.remapToJs(shape);
-			Sk.debugout(ndarrayJs.shape);
+
       ndarrayJs.strides = computeStrides(ndarrayJs.shape);
       ndarrayJs.dtype = dtype;
 
@@ -552,8 +556,6 @@ var $builtinmodule = function(name) {
 		//debugger;
     unpack(object, elements, state);
 
-		Sk.debugout(state.shape);
-
     // apply dtype casting function, if it has been provided
     if (dtype && Sk.builtin.checkFunction(dtype)) {
       var i;
@@ -563,7 +565,7 @@ var $builtinmodule = function(name) {
     }
 
     var _shape = new Sk.builtin.tuple(state.shape.map(function(x) {
-      return new Sk.builtin.nmber(x);
+      return new Sk.builtin.int_(x);
     }));
 
     var _buffer = new Sk.builtin.list(elements);
