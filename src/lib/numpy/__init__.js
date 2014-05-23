@@ -123,7 +123,7 @@ var $builtinmodule = function(name) {
   /**
 		Class for ndarray
 	**/
-  var CLASS_NDARRAY = "numpy.ndarray";
+  var CLASS_NDARRAY = "ndarray";
 
   function remapToJs_shallow(obj) {
     if (obj instanceof Sk.builtin.list) {
@@ -141,7 +141,7 @@ var $builtinmodule = function(name) {
 		Unpacks in any form nested Lists
 	**/
   function unpack(py_obj, buffer, state) {
-    if (object instanceof Sk.builtin.list || object instanceof Sk.builtin.tuple) {
+    if (py_obj instanceof Sk.builtin.list || py_obj instanceof Sk.builtin.tuple) {
       var py_items = remapToJs_shallow(py_obj);
       state.level += 1;
 
@@ -162,6 +162,7 @@ var $builtinmodule = function(name) {
   }
 
   function computeStrides(shape) {
+		Sk.debugout("computeStrides: " + shape);
     var strides = shape.slice(0);
     strides.reverse();
     var prod = 1;
@@ -229,7 +230,8 @@ var $builtinmodule = function(name) {
       offset, strides, order) {
       var ndarrayJs = {}; // js object holding the actual array
       ndarrayJs.shape = Sk.ffi.remapToJs(shape);
-      //ndarrayJs.strides = computeStrides(ndarrayJs.shape);
+			Sk.debugout(ndarrayJs.shape);
+      ndarrayJs.strides = computeStrides(ndarrayJs.shape);
       ndarrayJs.dtype = dtype;
 
       if (buffer && buffer instanceof Sk.builtin.list) {
@@ -261,7 +263,7 @@ var $builtinmodule = function(name) {
     $loc.__len__ = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
 
-      return new Sk.builtin.int_(ndarrayJs.shape[0], 10);
+      return new Sk.builtin.int_(ndarrayJs.shape[0]);
     });
 
     $loc.__iter__ = new Sk.builtin.func(function(self, index) {
@@ -387,7 +389,7 @@ var $builtinmodule = function(name) {
     // end of ndarray_f
   };
 
-  mod[CLASS_NDARRAY] = Sk.ffi.buildClass(mod, ndarray_f,
+  mod[CLASS_NDARRAY] = Sk.misceval.buildClass(mod, ndarray_f,
     CLASS_NDARRAY, []);
 
   /* Simple reimplementation of the linspace function
@@ -507,7 +509,7 @@ var $builtinmodule = function(name) {
   mod.arange = new Sk.builtin
     .func(arange_f);
 
-  /* dummy implementation for numpy.array
+  /* implementation for numpy.array
 	------------------------------------------------------------------------------------------------
 		http://docs.scipy.org/doc/numpy/reference/generated/numpy.array.html#numpy.array
 
@@ -547,7 +549,10 @@ var $builtinmodule = function(name) {
     var state = {};
     state.level = 0;
     state.shape = [];
+		//debugger;
     unpack(object, elements, state);
+
+		Sk.debugout(state.shape);
 
     // apply dtype casting function, if it has been provided
     if (dtype && Sk.builtin.checkFunction(dtype)) {
@@ -558,12 +563,13 @@ var $builtinmodule = function(name) {
     }
 
     var _shape = new Sk.builtin.tuple(state.shape.map(function(x) {
-      return new Sk.builtin.int_(x, 10);
+      return new Sk.builtin.nmber(x);
     }));
+
     var _buffer = new Sk.builtin.list(elements);
 
     // create new ndarray instance
-    return Sk.ffi.callsim(mod[CLASS_NDARRAY], _shape, dtype,
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape, dtype,
       _buffer);
   };
 
