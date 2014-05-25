@@ -247,40 +247,22 @@ var $builtinmodule = function(name) {
 
       self.v = ndarrayJs; // value holding the actual js object and array
       self.tp$name = CLASS_NDARRAY; // set class name
+
+      Sk.abstr.sattr(self, 'ndim', new Sk.builtin.int_(ndarrayJs.shape.length));
+      Sk.abstr.sattr(self, 'dtype', ndarrayJs.dtype);
+      Sk.abstr.sattr(self, 'shape', new Sk.builtin.tuple(ndarrayJs.shape.map(
+        function(x) {
+          return new Sk.builtin.int_(x);
+        })));
+      Sk.abstr.sattr(self, 'strides', new Sk.builtin.tuple(ndarrayJs.strides.map(
+        function(x) {
+          return new Sk.builtin.int_(x);
+        })));
+      Sk.abstr.sattr(self, 'size', new Sk.builtin.int_(prod(ndarrayJs.shape)));
+      Sk.abstr.sattr(self, 'data', new Sk.ffi.remapToPy(ndarrayJs.buffer));
     });
 
-		$loc.tp$getattr = Sk.builtin.object.prototype.GenericGetAttr;
-    /*$loc.__getattr__ = new Sk.builtin.func(function(self, name) {
-      var _ndarray = Sk.ffi.remapToJs(self);
-      // TODO: implement this
-      switch (name) {
-        case 'dtype':
-          return _ndarray.dtype;
-        case 'ndim':
-          return new Sk.builtin.int_(_ndarray.shape.length);
-        case 'shape':
-          return new Sk.builtin.tuple(_ndarray.shape.map(function(x) {
-            return new Sk.builtin.int_(x);
-          }));
-        case 'size':
-          return new Sk.builtin.int_(prod(_ndarray.shape));
-        case 'strides':
-          return new Sk.builtin.tuple(_ndarray.strides.map(function(x) {
-            return new Sk.builtin.int_(x);
-          }));
-        case 'buffer':
-          return new Sk.ffi.remapToPy(_ndarray.buffer);
-
-        default:
-					Sk.debugout("--> default");
-					var descr = Sk.builtin.type.typeLookup(self.ob$type, name);
-					if(descr)
-						return Sk.misceval.callsim(descr, self);
-
-          throw new Sk.builtin.AttributeError('Attribute "' + name +
-            '" is not getable on type "' + CLASS_NDARRAY + '"');
-      }
-    });*/
+    $loc.tp$getattr = Sk.builtin.object.prototype.GenericGetAttr;
 
     $loc.tolist = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
@@ -338,51 +320,67 @@ var $builtinmodule = function(name) {
       var i;
 
       // single index e.g. [3]
-			if (Sk.builtin.checkInt(index)) {
-				var offset  = Sk.ffi.remapToJs(index);
+      if (Sk.builtin.checkInt(index)) {
+        var offset = Sk.ffi.remapToJs(index);
 
-				if (ndarrayJs.shape.length > 1) {
-					_stride = ndarrayJs.strides[0];
-					buffer_internal = [];
-					_index = 0;
+        if (ndarrayJs.shape.length > 1) {
+          _stride = ndarrayJs.strides[0];
+          buffer_internal = [];
+          _index = 0;
 
-					for (i = offset * _stride, ubound = (offset + 1) * _stride; i < ubound; i++) {
-						buffer_internal[_index++] = ndarrayJs.buffer[i];
-					}
+          for (i = offset * _stride, ubound = (offset + 1) * _stride; i <
+            ubound; i++) {
+            buffer_internal[_index++] = ndarrayJs.buffer[i];
+          }
 
-					_buffer = new Sk.builtin.list(buffer_internal);
-					_shape = new Sk.builtin.tuple(Array.prototype.slice.call(ndarrayJs.shape,1).map(function(x) {return new Sk.builtin.int_(x);}));
-					return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape, undefined, _buffer);
-					}	else {
-						if (offset >= 0 && offset < ndarrayJs.buffer.length) {
-							return ndarrayJs.buffer[offset];
-						}	else {
-							throw new Sk.builtin.IndexError("array index out of range");
-						}
-				}
-			}	else if (index instanceof Sk.builtin.tuple) {
+          _buffer = new Sk.builtin.list(buffer_internal);
+          _shape = new Sk.builtin.tuple(Array.prototype.slice.call(
+            ndarrayJs.shape,
+            1).map(function(x) {
+            return new Sk.builtin.int_(x);
+          }));
+          return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape,
+            undefined,
+            _buffer);
+        } else {
+          if (offset >= 0 && offset < ndarrayJs.buffer.length) {
+            return ndarrayJs.buffer[offset];
+          } else {
+            throw new Sk.builtin.IndexError("array index out of range");
+          }
+        }
+      } else if (index instanceof Sk.builtin.tuple) {
         // index like [1,3]
-				var keyJs  = Sk.ffi.remapToJs(index);
-				return ndarrayJs.buffer[computeOffset(ndarrayJs.strides, keyJs)];
-			}	else if (index instanceof Sk.builtin.slice) {
-				var indices = index.indices();
-				var start = typeof indices[0] !== 'undefined' ? indices[0] : 0;
-				var stop  = typeof indices[1] !== 'undefined' ? indices[1] : ndarrayJs.buffer.length;
-				stop = stop > ndarrayJs.buffer.length ? ndarrayJs.buffer.length : stop;
-				var step  = typeof indices[2] !== 'undefined' ? indices[2] : 1;
-				buffer_internal = [];
-				_index = 0;
-				if (step > 0) {
-					for (i = start; i < stop; i += step) {
-						buffer_internal[_index++] = ndarrayJs.buffer[i];
-					}
-				}
-				_buffer = new Sk.builtin.list(buffer_internal);
-				_shape = new Sk.builtin.tuple([buffer_internal.length].map(function(x) {return new Sk.builtin.int_(x);}));
-				return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape, undefined, _buffer);
-			}	else {
-				throw new Sk.builtin.ValueError('"Check argument type"');
-			}
+        var keyJs = Sk.ffi.remapToJs(index);
+        return ndarrayJs.buffer[computeOffset(ndarrayJs.strides, keyJs)];
+      } else if (index instanceof Sk.builtin.slice) {
+        var indices = index.indices();
+        var start = typeof indices[0] !== 'undefined' ? indices[0] : 0;
+        var stop = typeof indices[1] !== 'undefined' ? indices[1] :
+          ndarrayJs
+          .buffer.length;
+        stop = stop > ndarrayJs.buffer.length ? ndarrayJs.buffer.length :
+          stop;
+        var step = typeof indices[2] !== 'undefined' ? indices[2] : 1;
+        buffer_internal = [];
+        _index = 0;
+        if (step > 0) {
+          for (i = start; i < stop; i += step) {
+            buffer_internal[_index++] = ndarrayJs.buffer[i];
+          }
+        }
+        _buffer = new Sk.builtin.list(buffer_internal);
+        _shape = new Sk.builtin.tuple([buffer_internal.length].map(
+          function(
+            x) {
+            return new Sk.builtin.int_(x);
+          }));
+        return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape, undefined,
+          _buffer);
+      } else {
+        throw new Sk.builtin.ValueError('Index "' + index +
+          '" must be int, slice or tuple');
+      }
     });
 
     $loc.__setitem__ = new Sk.builtin.func(function(self, index) {
@@ -740,7 +738,9 @@ var $builtinmodule = function(name) {
     return Sk.ffi.remapToPy(res);
   };
   zeros_f.co_varnames = ['shape', 'dtype', 'order'];
-  zeros_f.$defaults = [0, Sk.builtin.none.none$, 'C'];
+  zeros_f.$defaults = [
+    0, Sk.builtin.none.none$, 'C'
+  ];
   mod.zeros = new Sk.builtin.func(zeros_f);
 
   var ones_f = function(shape, dtype, order) {
@@ -773,7 +773,9 @@ var $builtinmodule = function(name) {
     return Sk.ffi.remapToPy(res);
   };
   ones_f.co_varnames = ['shape', 'dtype', 'order'];
-  ones_f.$defaults = [0, Sk.builtin.none.none$, 'C'];
+  ones_f.$defaults = [
+    0, Sk.builtin.none.none$, 'C'
+  ];
   mod.ones = new Sk.builtin.func(ones_f);
 
   var dot_f = function(a, b) {
@@ -813,7 +815,9 @@ var $builtinmodule = function(name) {
     return Sk.ffi.remapToPy(res);
   };
   dot_f.co_varnames = ['a', 'b'];
-  dot_f.$defaults = [Sk.builtin.none.none$, Sk.builtin.none.none$];
+  dot_f.$defaults = [Sk.builtin.none.none$,
+    Sk.builtin.none.none$
+  ];
   mod.dot = new Sk.builtin.func(dot_f);
 
   /* not implemented methods */
