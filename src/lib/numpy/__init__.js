@@ -123,17 +123,24 @@ var $builtinmodule = function(name) {
   /**
 		Class for ndarray
 	**/
-  var CLASS_NDARRAY = "ndarray";
+  var CLASS_NDARRAY = "numpy.ndarray";
 
-  function remapToJs_shallow(obj) {
+  function remapToJs_shallow(obj, shallow) {
+    var _shallow = shallow || true;
     if (obj instanceof Sk.builtin.list) {
-      return obj.v;
-    } else {
-      var ret = [];
-      for (var i = 0; i < valuePy.v.length; ++i) {
-        ret.push(Sk.ffi.remapToJs(valuePy.v[i]));
+      if (!_shallow) {
+        var ret = [];
+        for (var i = 0; i < obj.v.length; ++i) {
+          ret.push(Sk.ffi.remapToJs(obj.v[i]));
+        }
+        return ret;
+      } else {
+        return obj.v;
       }
-      return ret;
+    } else if (obj instanceof Sk.builtin.float_) {
+      return Sk.builtin.asnum$nofloat(obj);
+    } else {
+      return Sk.ffi.remapToJs(obj);
     }
   }
 
@@ -232,6 +239,34 @@ var $builtinmodule = function(name) {
     return str;
   }
 
+  function updateAttributes(self, ndarrayJs) {
+    Sk.abstr.sattr(self, 'ndmin', new Sk.builtin.int_(ndarrayJs.shape.length));
+    Sk.abstr.sattr(self, 'dtype', ndarrayJs.dtype);
+    Sk.abstr.sattr(self, 'shape', new Sk.builtin.tuple(ndarrayJs.shape.map(
+      function(x) {
+        return new Sk.builtin.int_(x);
+      })));
+    Sk.abstr.sattr(self, 'strides', new Sk.builtin.tuple(ndarrayJs.strides.map(
+      function(x) {
+        return new Sk.builtin.int_(x);
+      })));
+    Sk.abstr.sattr(self, 'size', new Sk.builtin.int_(prod(ndarrayJs.shape)));
+    Sk.abstr.sattr(self, 'data', new Sk.ffi.remapToPy(ndarrayJs.buffer));
+  }
+
+  /**
+    An array object represents a multidimensional, homogeneous array of fixed-size items.
+    An associated data-type object describes the format of each element in the array
+    (its byte-order, how many bytes it occupies in memory, whether it is an integer, a
+    floating point number, or something else, etc.)
+
+    Arrays should be constructed using array, zeros or empty (refer to the See Also
+    section below). The parameters given here refer to a low-level method (ndarray(...)) for
+    instantiating an array.
+
+    For more information, refer to the numpy module and examine the the methods and
+    attributes of an array.
+  **/
   var ndarray_f = function($gbl, $loc) {
     $loc.__init__ = new Sk.builtin.func(function(self, shape, dtype, buffer,
       offset, strides, order) {
@@ -248,18 +283,7 @@ var $builtinmodule = function(name) {
       self.v = ndarrayJs; // value holding the actual js object and array
       self.tp$name = CLASS_NDARRAY; // set class name
 
-      Sk.abstr.sattr(self, 'ndim', new Sk.builtin.int_(ndarrayJs.shape.length));
-      Sk.abstr.sattr(self, 'dtype', ndarrayJs.dtype);
-      Sk.abstr.sattr(self, 'shape', new Sk.builtin.tuple(ndarrayJs.shape.map(
-        function(x) {
-          return new Sk.builtin.int_(x);
-        })));
-      Sk.abstr.sattr(self, 'strides', new Sk.builtin.tuple(ndarrayJs.strides.map(
-        function(x) {
-          return new Sk.builtin.int_(x);
-        })));
-      Sk.abstr.sattr(self, 'size', new Sk.builtin.int_(prod(ndarrayJs.shape)));
-      Sk.abstr.sattr(self, 'data', new Sk.ffi.remapToPy(ndarrayJs.buffer));
+      updateAttributes(self, ndarrayJs);
     });
 
     $loc.tp$getattr = Sk.builtin.object.prototype.GenericGetAttr;
@@ -293,6 +317,11 @@ var $builtinmodule = function(name) {
         new Sk.builtin.list(buffer));
     });
 
+    /**
+      Fill the array with a scalar value.
+      Parameters: value: scalar
+                    All elements of a will be assigned this value
+    **/
     $loc.fill = new Sk.builtin.func(function(self, value) {
       Sk.builtin.pyCheckArgs("fill", arguments, 2, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
@@ -301,12 +330,11 @@ var $builtinmodule = function(name) {
       });
       var i;
       for (i = 0; i < ndarrayJs.buffer.length; i++) {
-        if (ndarrayJs.dtypePy) {
-          ndarrayJs.buffer[i] = Sk.misceval.callsim(ndarrayJs.dtypePy,
-            valuePy);
+        if (ndarrayJs.dtype) {
+          ndarrayJs.buffer[i] = Sk.misceval.callsim(ndarrayJs.dtype,
+            value);
         }
       }
-      return new Sk.builtin.list(buffer);
     });
 
     $loc.__getitem__ = new Sk.builtin.func(function(self, index) {
@@ -354,6 +382,7 @@ var $builtinmodule = function(name) {
         var keyJs = Sk.ffi.remapToJs(index);
         return ndarrayJs.buffer[computeOffset(ndarrayJs.strides, keyJs)];
       } else if (index instanceof Sk.builtin.slice) {
+        // support for slices e.g. [1:4]
         var indices = index.indices();
         var start = typeof indices[0] !== 'undefined' ? indices[0] : 0;
         var stop = typeof indices[1] !== 'undefined' ? indices[1] :
@@ -383,19 +412,43 @@ var $builtinmodule = function(name) {
       }
     });
 
-    $loc.__setitem__ = new Sk.builtin.func(function(self, index) {
+    $loc.__setitem__ = new Sk.builtin.func(function(self, index, value) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
-      // TODO: implement this
-      return index;
+      Sk.builtin.pyCheckArgs("[]", arguments, 3, 3);
+      if (index instanceof Sk.builtin.int_) {
+        var _offset = Sk.ffi.remapToJs(index);
+        if (ndarrayJs.shape.length > 1) {
+          var _value = Sk.ffi.remapToJs(value);
+          var _stride = ndarrayJs.strides[0];
+          var _index = 0;
+
+          var _ubound = (_offset + 1) * _stride;
+          var i;
+          for (i = _offset * _stride; i < _ubound; i++) {
+            ndarrayJs.buffer[i] = _value.buffer[_index++];
+          }
+        } else {
+          if (_offset >= 0 && _offset < ndarrayJs.buffer.length) {
+            ndarrayJs.buffer[_offset] = value;
+          } else {
+            throw new Sk.builtin.IndexError("array index out of range");
+          }
+        }
+      } else if (index instanceof Sk.builtin.tuple) {
+        _key = Sk.ffi.remapToJs(index);
+        ndarrayJs.buffer[computeOffset(ndarrayJs.strides, _key)] = value;
+      } else {
+        throw new Sk.builtin.TypeError(
+          'argument "index" must be int or tuple');
+      }
     });
 
     $loc.__len__ = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
-
       return new Sk.builtin.int_(ndarrayJs.shape[0]);
     });
 
-    $loc.__iter__ = new Sk.builtin.func(function(self, index) {
+    $loc.__iter__ = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       var ret = {
         tp$iter: function() {
@@ -404,9 +457,7 @@ var $builtinmodule = function(name) {
         $obj: ndarrayJs,
         $index: 0,
         tp$iternext: function() {
-          if (ret.$index >= ret.$obj.buffer.length)
-            return undefined;
-
+          if (ret.$index >= ret.$obj.buffer.length) return undefined;
           return ret.$obj.buffer[ret.$index++];
         }
       };
@@ -414,7 +465,7 @@ var $builtinmodule = function(name) {
     });
 
     $loc.__str__ = new Sk.builtin.func(function(self) {
-      var ndarrayJs = Sk.ffi.remapToJs(self);
+      var ndarrayJs = remapToJs_shallow(self, false);
       return new Sk.builtin.str(stringify(ndarrayJs.buffer,
         ndarrayJs.shape));
     });
@@ -627,6 +678,8 @@ var $builtinmodule = function(name) {
       type = Sk.builtin.nmber.float$;
     }
 
+    //ToDo: add here ndarray
+
     // return as list, dunno how to work with arrays.
     return new Sk.builtin.list(np.arange(start_num, stop_num,
       step_num, type));
@@ -678,14 +731,44 @@ var $builtinmodule = function(name) {
     var state = {};
     state.level = 0;
     state.shape = [];
-    //debugger;
+
     unpack(object, elements, state);
 
+    var i;
     // apply dtype casting function, if it has been provided
-    if (dtype && Sk.builtin.checkFunction(dtype)) {
-      var i;
+    if (dtype && Sk.builtin.checkClass(dtype)) {
       for (i = 0; i < elements.length; i++) {
         elements[i] = Sk.misceval.callsim(dtype, elements[i]);
+      }
+    } else {
+      // check elements and find first usable type
+      // should be refactored
+      for (i = 0; i < elements.length; i++) {
+        if (elements[i] && isNaN(elements[i])) {
+          dtype = Sk.builtin.float_;
+          break;
+        } else if (typeof elements[i] == 'string') {
+          dtype = Sk.builtin.str;
+        } else {
+          dtype = Sk.builtin.float_;
+        }
+      }
+    }
+
+    // check for ndmin param
+    if (ndmin) {
+      if (Sk.builtin.checkNumber(ndmin)) {
+        var _ndmin = Sk.builtin.asnum$(ndmin);
+        if (_ndmin >= 0 && _ndmin > state.shape.length) {
+          var _ndmin_array = [];
+          for (i = 0; i < _ndmin - state.shape.length; i++) {
+            _ndmin_array.push(1);
+          }
+          state.shape = _ndmin_array.concat(state.shape);
+        }
+      } else {
+        throw new Sk.builtin.TypeError(
+          'Parameter "ndmin" must be of type "int"');
       }
     }
 
@@ -694,7 +777,6 @@ var $builtinmodule = function(name) {
     }));
 
     var _buffer = new Sk.builtin.list(elements);
-
     // create new ndarray instance
     return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape, dtype,
       _buffer);
@@ -703,81 +785,102 @@ var $builtinmodule = function(name) {
   array_f.co_varnames = ['object', 'dtype', 'copy', 'order',
     'subok', 'ndmin'
   ];
-  array_f.$defaults = [null, Sk.builtin.none.none$, true, Sk.builtin
-    .none.none$, false, 0
-  ];
+  array_f.$defaults = [null, Sk.builtin.none.none$, true, new Sk.builtin.str(
+    'C'), false, new Sk.builtin.int_(0)];
   mod.array = new Sk.builtin.func(array_f);
 
+  /**
+    Return a new array of given shape and type, filled with zeros.
+  **/
   var zeros_f = function(shape, dtype, order) {
     Sk.builtin.pyCheckArgs("zeros", arguments, 1, 3);
-
+    Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
     if (dtype instanceof Sk.builtin.list) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) +
         "' is not supported for dtype.");
     }
 
-    // generate an array of the dimensions for the generic array method
-    var dims = [];
-    var i;
-    if (shape === undefined) {
-      throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(shape) +
-        "' object is undefined while calling zeros");
-    } else if (Sk.builtin.checkNumber(shape)) {
-      dims.push(Sk.builtin.asnum$(shape));
-    } else if (shape instanceof Sk.builtin.tuple) {
-      for (i = 0; i < shape.v.length; i++)
-        dims.push(Sk.builtin.asnum$(shape.v[i]));
-    } else {
-      for (i = 0; i < shape.v.length; i++)
-        dims.push(Sk.builtin.asnum$(shape.v[i]));
-    }
+    var _zero = new Sk.builtin.float_(0.0);
 
-    var res = np.array.apply(np, dims);
-    res = np.zeros(res, dtype, order);
-
-    return Sk.ffi.remapToPy(res);
+    return Sk.misceval.callsim(mod.full, shape, _zero, dtype, order);
   };
   zeros_f.co_varnames = ['shape', 'dtype', 'order'];
   zeros_f.$defaults = [
-    0, Sk.builtin.none.none$, 'C'
+    new Sk.builtin.tuple([]), Sk.builtin.none.none$, new Sk.builtin.str('C')
   ];
   mod.zeros = new Sk.builtin.func(zeros_f);
 
+  /**
+    Return a new array of given shape and type, filled with `fill_value`.
+  **/
+  var full_f = function(shape, fill_value, dtype, order) {
+    Sk.builtin.pyCheckArgs("full", arguments, 2, 4);
+    Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
+    if (dtype instanceof Sk.builtin.list) {
+      throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) +
+        "' is currently not supported for dtype.");
+    }
+
+    // generate an array of the dimensions for the generic array method
+    var _shape = Sk.ffi.remapToJs(shape);
+    var _size = prod(_shape);
+    var _buffer = [];
+    var _fill_value = fill_value;
+    var i;
+
+    for (i = 0; i < _size; i++) {
+      _buffer[i] = _fill_value;
+    }
+
+    // if no dtype given and type of fill_value is numeric, assume float
+    if (!dtype && Sk.builtin.checkNumber(fill_value)) {
+      dtype = Sk.builtin.float_;
+    }
+
+    // apply dtype casting function, if it has been provided
+    if (Sk.builtin.checkClass(dtype)) {
+      for (i = 0; i < _buffer.length; i++) {
+        _buffer[i] = Sk.misceval.callsim(dtype, _buffer[i]);
+      }
+    }
+
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, dtype, new Sk.builtin
+      .list(
+        _buffer));
+  };
+  full_f.co_varnames = ['shape', 'fill_value', 'dtype', 'order'];
+  full_f.$defaults = [
+    new Sk.builtin.tuple([]), Sk.builtin.none.none$, Sk.builtin.none.none$, new Sk
+    .builtin
+    .str('C')
+  ];
+  mod.full = new Sk.builtin.func(full_f);
+
+
+  /**
+    Return a new array of given shape and type, filled with ones.
+  **/
   var ones_f = function(shape, dtype, order) {
     Sk.builtin.pyCheckArgs("ones", arguments, 1, 3);
-
+    Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
     if (dtype instanceof Sk.builtin.list) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) +
         "' is not supported for dtype.");
     }
 
-    // generate an array of the dimensions for the generic array method
-    var dims = [];
-    var i;
-    if (shape === undefined) {
-      throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(shape) +
-        "' object is undefined while calling ones");
-    } else if (Sk.builtin.checkNumber(shape)) {
-      dims.push(Sk.builtin.asnum$(shape));
-    } else if (shape instanceof Sk.builtin.tuple) {
-      for (i = 0; i < shape.v.length; i++)
-        dims.push(Sk.builtin.asnum$(shape.v[i]));
-    } else {
-      for (i = 0; i < shape.v.length; i++)
-        dims.push(Sk.builtin.asnum$(shape.v[i]));
-    }
-
-    var res = np.array.apply(np, dims);
-    res = np.ones(res, dtype, order);
-
-    return Sk.ffi.remapToPy(res);
+    var _one = new Sk.builtin.float_(1.0);
+    return Sk.misceval.callsim(mod.full, shape, _one, dtype, order);
   };
   ones_f.co_varnames = ['shape', 'dtype', 'order'];
   ones_f.$defaults = [
-    0, Sk.builtin.none.none$, 'C'
+    new Sk.builtin.tuple([]), Sk.builtin.none.none$, new Sk.builtin.str('C')
   ];
   mod.ones = new Sk.builtin.func(ones_f);
 
+
+  /**
+    Dot product
+  **/
   var dot_f = function(a, b) {
     Sk.builtin.pyCheckArgs("dot", arguments, 2, 2);
 
