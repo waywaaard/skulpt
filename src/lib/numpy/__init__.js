@@ -18,65 +18,6 @@ numpy.prototype.wrapasfloats = function(values) {
   return values;
 };
 
-// fills a multidimensional array with the given val
-numpy.prototype.fill = function(array_like, dtype, val) {
-  var i;
-
-  if (Object.prototype.toString.call(array_like) === '[object Array]') {
-    for (i = 0; i < array_like.length; ++i) {
-      if (Object.prototype.toString.call(array_like[i]) === '[object Array]') {
-        array_like[i] = this.fill(array_like[i], dtype, val);
-      } else {
-        if (dtype === Sk.builtin.nmber.int$)
-          array_like[i] = int(val);
-        else
-          array_like[i] = val * 1.0;
-      }
-    }
-  }
-
-  return array_like;
-};
-
-numpy.prototype.array = function(length) {
-  var arr = new Array(length || 0);
-  var i = length;
-
-  if (arguments.length > 1) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    while (i--) arr[length - 1 - i] = this.array.apply(this, args);
-  }
-
-  return arr;
-};
-
-numpy.prototype.onarray = function(array, func) {
-  var i;
-  for (i = 0; i < array.length; i++) {
-    array[i] = func(Sk.ffi.unwrapo(array[i]));
-  }
-
-  return array;
-};
-
-numpy.prototype.dot = function(a, b) {
-  if (math === undefined) {
-    if (console !== undefined)
-      Sk.debugout("math object not defined");
-
-    return null;
-  }
-
-  var res;
-
-  var a_matrix = math.matrix(a);
-  var b_matrix = math.matrix(b);
-
-  res = math.multiply(a_matrix, b_matrix);
-
-  return res;
-};
-
 numpy.prototype.arange = function(start, stop, step, type) {
   if (step === undefined)
     step = 1.0;
@@ -579,7 +520,7 @@ var $builtinmodule = function(name) {
     /**
      Simple pow implementation that faciliates the pow builtin
     **/
-    $loc.__pow__ = new Sk.builtin.func(function(self, other){
+    $loc.__pow__ = new Sk.builtin.func(function(self, other) {
       Sk.builtin.pyCheckArgs("__pow__", arguments, 2, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
       var _buffer = ndarrayJs.buffer.map(function(value) {
@@ -601,8 +542,8 @@ var $builtinmodule = function(name) {
   /**
    Trigonometric functions, all element wise
   **/
-  //mod.pi = Sk.builtin.assk$(math.PI, Sk.builtin.nmber.float$);
-  //mod.e = Sk.builtin.assk$(math.E, Sk.builtin.nmber.float$);
+  mod.pi = Sk.builtin.assk$(np.math ? np.math.PI : Math.PI, Sk.builtin.nmber.float$);
+  mod.e = Sk.builtin.assk$(np.math ? np.math.E : Math.E, Sk.builtin.nmber.float$);
   /**
   Trigonometric sine, element-wise.
   **/
@@ -636,18 +577,93 @@ var $builtinmodule = function(name) {
     throw new Sk.builtin.TypeError('Unsupported argument type for "x"');
   }
 
+  // Sine, element-wise.
   var sin_f = function(x, out) {
     Sk.builtin.pyCheckArgs("sin", arguments, 1, 2);
-    //return allTrigonometricFunc(x, math.sin);
+    return callTrigonometricFunc(x, np.math ? np.math.sin : Math.sin);
   };
   sin_f.co_varnames = ['x', 'out'];
   sin_f.$defaults = [0, new Sk.builtin.list([])];
   mod.sin = new Sk.builtin.func(sin_f);
 
+  // Hyperbolic sine, element-wise.
+  var sinh_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("sinh", arguments, 1, 2);
+    if (!np.math) throw new Sk.builtin.OperationError("sinh requires mathjs");
+    return callTrigonometricFunc(x, np.math.sinh);
+  };
+  sinh_f.co_varnames = ['x', 'out'];
+  sinh_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.sinh = new Sk.builtin.func(sinh_f);
+
+  // Inverse sine, element-wise.
+  var arcsin_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("arcsin", arguments, 1, 2);
+    return callTrigonometricFunc(x, np.math ? np.math.asin : Math.asin);
+  };
+  arcsin_f.co_varnames = ['x', 'out'];
+  arcsin_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.arcsin = new Sk.builtin.func(arcsin_f);
+
+  // Cosine, element-wise.
+  var cos_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("cos", arguments, 1, 2);
+    return callTrigonometricFunc(x, np.math ? np.math.cos : Math.cos);
+  };
+  cos_f.co_varnames = ['x', 'out'];
+  cos_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.cos = new Sk.builtin.func(cos_f);
+
+  // Hyperbolic cosine, element-wise.
+  var cosh_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("cosh", arguments, 1, 2);
+    if (!np.math) throw new Sk.builtin.OperationError("cosh requires mathjs");
+    return callTrigonometricFunc(x, np.math.cosh);
+  };
+  cosh_f.co_varnames = ['x', 'out'];
+  cosh_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.cosh = new Sk.builtin.func(cosh_f);
+
+  // Inverse cosine, element-wise.
+  var arccos_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("arccos", arguments, 1, 2);
+    return callTrigonometricFunc(x, np.math ? np.math.acos : Math.acos);
+  };
+  arccos_f.co_varnames = ['x', 'out'];
+  arccos_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.arccos = new Sk.builtin.func(arccos_f);
+
+  // Inverse tangens, element-wise.
+  var arctan_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("arctan", arguments, 1, 2);
+    return callTrigonometricFunc(x, np.math ? np.math.atan : Math.atan);
+  };
+  arctan_f.co_varnames = ['x', 'out'];
+  arctan_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.arctan = new Sk.builtin.func(arctan_f);
+
+  // Tangens, element-wise.
+  var tan_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("tan", arguments, 1, 2);
+    return callTrigonometricFunc(x, np.math ? np.math.tan : Math.tan);
+  };
+  tan_f.co_varnames = ['x', 'out'];
+  tan_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.tan = new Sk.builtin.func(tan_f);
+
+  // Hyperbolic cosine, element-wise.
+  var tanh_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("tanh", arguments, 1, 2);
+    if (!np.math) throw new Sk.builtin.OperationError("tanh requires mathjs");
+    return callTrigonometricFunc(x, np.math.tanh);
+  };
+  tanh_f.co_varnames = ['x', 'out'];
+  tanh_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.tanh = new Sk.builtin.func(tanh_f);
+
   /* Simple reimplementation of the linspace function
    * http://docs.scipy.org/doc/numpy/reference/generated/numpy.linspace.html
    */
-
   var linspace_f = function(start, stop, num, endpoint, retstep) {
     Sk.builtin.pyCheckArgs("linspace", arguments, 3, 5);
     Sk.builtin.pyCheckType("start", "number", Sk.builtin.checkNumber(
