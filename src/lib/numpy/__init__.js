@@ -545,6 +545,10 @@ var $builtinmodule = function(name) {
   function callTrigonometricFunc(x, op) {
     var res;
     var num;
+    if(x instanceof Sk.builtin.list || x instanceof Sk.builtin.tuple){
+      x = Sk.misceval.callsim(mod.array, x);
+    }
+
     if (x.tp$name === CLASS_NDARRAY) {
       var ndarrayJs = Sk.ffi.remapToJs(x);
 
