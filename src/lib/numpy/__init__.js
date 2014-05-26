@@ -18,18 +18,6 @@ numpy.prototype.wrapasfloats = function(values) {
   return values;
 };
 
-numpy.prototype.zeros = function(shape, dtype, order) {
-  var res = shape; //this.array(shape);
-  this.fill(res, dtype, 0);
-  return res;
-};
-
-numpy.prototype.ones = function(shape, dtype, order) {
-  var res = shape; //this.array(shape);
-  this.fill(res, dtype, 1);
-  return res;
-};
-
 // fills a multidimensional array with the given val
 numpy.prototype.fill = function(array_like, dtype, val) {
   var i;
@@ -121,7 +109,7 @@ var $builtinmodule = function(name) {
   var mod = {};
 
   /**
-		Class for ndarray
+		Class for numpy.ndarray
 	**/
   var CLASS_NDARRAY = "numpy.ndarray";
 
@@ -145,7 +133,7 @@ var $builtinmodule = function(name) {
   }
 
   /**
-		Unpacks in any form nested Lists
+		Unpacks in any form fo nested Lists
 	**/
   function unpack(py_obj, buffer, state) {
     if (py_obj instanceof Sk.builtin.list || py_obj instanceof Sk.builtin.tuple) {
@@ -168,6 +156,9 @@ var $builtinmodule = function(name) {
     }
   }
 
+  /**
+   Computes the strides for columns and rows
+  **/
   function computeStrides(shape) {
     var strides = shape.slice(0);
     strides.reverse();
@@ -182,6 +173,10 @@ var $builtinmodule = function(name) {
     return strides.reverse();
   }
 
+  /**
+    Computes the offset for the ndarray for given index and strides
+    [1, ..., n]
+  **/
   function computeOffset(strides, index) {
     var offset = 0;
     for (var k = 0, len = strides.length; k < len; k++) {
@@ -239,6 +234,9 @@ var $builtinmodule = function(name) {
     return str;
   }
 
+  /**
+    Updates all attributes of the numpy.ndarray
+  **/
   function updateAttributes(self, ndarrayJs) {
     Sk.abstr.sattr(self, 'ndmin', new Sk.builtin.int_(ndarrayJs.shape.length));
     Sk.abstr.sattr(self, 'dtype', ndarrayJs.dtype);
@@ -287,6 +285,10 @@ var $builtinmodule = function(name) {
     });
 
     $loc.tp$getattr = Sk.builtin.object.prototype.GenericGetAttr;
+
+    // ToDo: setAttribute should be implemented, change of shape causes resize
+    // ndmin cannot be set, etc...
+    $loc.tp$setattr = Sk.builtin.object.prototype.GenericSetAttr;
 
     $loc.tolist = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
@@ -476,94 +478,118 @@ var $builtinmodule = function(name) {
         ndarrayJs.shape) + ")");
     });
 
-    $loc.__add__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "__add__ is not yet implemented");
-    });
-    $loc.__radd__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "__radd__ is not yet implemented");
-    });
+    /**
+      Creates left hand side operations for given binary operator
+    **/
+    function makeNumericBinaryOpLhs(operation) {
+      return function(self, other) {
+        var lhs;
+        var rhs;
+        var buffer; // external
+        var _buffer; // internal use
+        var shape; // new shape of returned ndarray
+        var i;
 
-    $loc.__sub__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "__sub__ is not yet implemented");
-    });
-    $loc.__rsub__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "__rsub__ is not yet implemented");
-    });
 
-    $loc.__mul__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "__mul__ is not yet implemented");
-    });
-    $loc.__rmul__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "__rmul__ is not yet implemented");
-    });
+        var ndarrayJs = Sk.ffi.remapToJs(self);
 
-    $loc.__div__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
-    $loc.__rdiv__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
+        if (other.tp$name === CLASS_NDARRAY) {
+          lhs = ndarrayJs.buffer;
+          rhs = Sk.ffi.remapToJs(other).buffer;
+          _buffer = [];
+          for (i = 0, len = lhs.length; i < len; i++) {
+            //_buffer[i] = operation(lhs[i], rhs[i]);
+            _buffer[i] = Sk.abstr.binary_op_(lhs[i], rhs[i], operation);
+          }
+        } else {
+          lhs = ndarrayJs.buffer;
+          _buffer = [];
+          for (i = 0, len = lhs.length; i < len; i++) {
+            _buffer[i] = Sk.abstr.numberBinOp(lhs[i], other, operation);
+          }
+        }
 
-    $loc.__mod__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
-    $loc.__rmod__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
+        // create return ndarray
+        shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+          return new Sk.builtin.int_(x);
+        }));
+        buffer = new Sk.builtin.list(_buffer);
+        return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, undefined,
+          buffer);
+      };
+    }
 
-    $loc.__xor__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
-    $loc.__rxor__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
+    function makeNumericBinaryOpRhs(operation) {
+      return function(self, other) {
+        var ndarrayJs = Sk.ffi.remapToJs(self);
+        var rhsBuffer = ndarrayJs.buffer;
+        var _buffer = [];
+        for (var i = 0, len = rhsBuffer.length; i < len; i++) {
+          _buffer[i] = Sk.abstr.numberBinOp(other, rhsBuffer[i], operation);
+        }
+        var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+          return new Sk.builtin.int_(x);
+        }));
+        buffer = new Sk.builtin.list(_buffer);
+        return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, undefined, buffer);
+      };
+    }
 
-    $loc.__lshift__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
-    $loc.__rlshift__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
+    function makeUnaryOp(operation) {
+      return function(self) {
+        var ndarrayJs = Sk.ffi.remapToJs(self);
+        var _buffer = ndarrayJs.buffer.map(function(value) {
+          return Sk.abstr.numberUnaryOp(value, operation);
+        });
+        var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+          return new Sk.builtin.int_(x);
+        }));
+        buffer = new Sk.builtin.list(_buffer);
+        return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, undefined, buffer);
+      };
+    }
 
-    $loc.__rshift__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
-    $loc.__rrshift__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
+    $loc.__add__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Add"));
+    $loc.__radd__ = new Sk.builtin.func(makeNumericBinaryOpRhs("Add"));
 
-    $loc.__pos__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
-    $loc.__neg__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
+    $loc.__sub__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Sub"));
+    $loc.__rsub__ = new Sk.builtin.func(makeNumericBinaryOpRhs("Sub"));
 
-    $loc.__exp__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
-    });
-    $loc.__sin__ = new Sk.builtin.func(function() {
-      throw new Sk.builtin.NotImplementedError(
-        "ones_like is not yet implemented");
+    $loc.__mul__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Mult"));
+    $loc.__rmul__ = new Sk.builtin.func(makeNumericBinaryOpRhs("Mult"));
+
+    $loc.__div__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Div"));
+    $loc.__rdiv__ = new Sk.builtin.func(makeNumericBinaryOpRhs("Div"));
+
+    $loc.__mod__ = new Sk.builtin.func(makeNumericBinaryOpLhs("Mod"));
+    $loc.__rmod__ = new Sk.builtin.func(makeNumericBinaryOpRhs("Mod"));
+
+    $loc.__xor__ = new Sk.builtin.func(makeNumericBinaryOpLhs("BitXor"));
+    $loc.__rxor__ = new Sk.builtin.func(makeNumericBinaryOpRhs("BitXor"));
+
+    $loc.__lshift__ = new Sk.builtin.func(makeNumericBinaryOpLhs("LShift"));
+    $loc.__rlshift__ = new Sk.builtin.func(makeNumericBinaryOpRhs("LShift"));
+
+    $loc.__rshift__ = new Sk.builtin.func(makeNumericBinaryOpLhs("RShift"));
+    $loc.__rrshift__ = new Sk.builtin.func(makeNumericBinaryOpRhs("RShift"));
+
+    $loc.__pos__ = new Sk.builtin.func(makeUnaryOp("UAdd"));
+    $loc.__neg__ = new Sk.builtin.func(makeUnaryOp("USub"));
+
+    /**
+     Simple pow implementation that faciliates the pow builtin
+    **/
+    $loc.__pow__ = new Sk.builtin.func(function(self, other){
+      Sk.builtin.pyCheckArgs("__pow__", arguments, 2, 2);
+      var ndarrayJs = Sk.ffi.remapToJs(self);
+      var _buffer = ndarrayJs.buffer.map(function(value) {
+        return Sk.builtin.pow(Sk.ffi.remapToPy(value), other);
+      });
+      var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+        return new Sk.builtin.int_(x);
+      }));
+      buffer = new Sk.builtin.list(_buffer);
+      return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, undefined, buffer);
     });
 
     // end of ndarray_f
@@ -571,6 +597,52 @@ var $builtinmodule = function(name) {
 
   mod[CLASS_NDARRAY] = Sk.misceval.buildClass(mod, ndarray_f,
     CLASS_NDARRAY, []);
+
+  /**
+   Trigonometric functions, all element wise
+  **/
+  //mod.pi = Sk.builtin.assk$(math.PI, Sk.builtin.nmber.float$);
+  //mod.e = Sk.builtin.assk$(math.E, Sk.builtin.nmber.float$);
+  /**
+  Trigonometric sine, element-wise.
+  **/
+
+  function callTrigonometricFunc(x, op) {
+    var res;
+    var num;
+    if (x.tp$name === CLASS_NDARRAY) {
+      var ndarrayJs = Sk.ffi.remapToJs(x);
+
+      var _buffer = ndarrayJs.buffer.map(function(value) {
+        num = Sk.builtin.asnum$(value);
+        res = op.call(null, num);
+        return new Sk.builtin.nmber(res, Sk.builtin.nmber
+          .float$);
+      });
+
+      var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+        return new Sk.builtin.int_(x);
+      }));
+
+      buffer = new Sk.builtin.list(_buffer);
+      return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, undefined, buffer);
+    } else if (Sk.builtin.checkNumber(x)) {
+      num = Sk.builtin.asnum$(x);
+      res = op.call(null, num);
+      return new Sk.builtin.nmber(res, Sk.builtin.nmber
+        .float$);
+    }
+
+    throw new Sk.builtin.TypeError('Unsupported argument type for "x"');
+  }
+
+  var sin_f = function(x, out) {
+    Sk.builtin.pyCheckArgs("sin", arguments, 1, 2);
+    //return allTrigonometricFunc(x, math.sin);
+  };
+  sin_f.co_varnames = ['x', 'out'];
+  sin_f.$defaults = [0, new Sk.builtin.list([])];
+  mod.sin = new Sk.builtin.func(sin_f);
 
   /* Simple reimplementation of the linspace function
    * http://docs.scipy.org/doc/numpy/reference/generated/numpy.linspace.html
@@ -636,6 +708,7 @@ var $builtinmodule = function(name) {
       return new Sk.builtin.tuple([new Sk.builtin.list(np.wrapasfloats(
         samples)), step]);
 
+    // ToDo: return as ndarray! dtype:float
     return new Sk.builtin.list(np.wrapasfloats(samples));
   };
 
@@ -914,6 +987,8 @@ var $builtinmodule = function(name) {
     }
 
     res = np.math.multiply(a_matrix, b_matrix);
+
+    // ToDo: return ndarray
 
     return Sk.ffi.remapToPy(res);
   };
