@@ -1564,6 +1564,8 @@ var $builtinmodule = function(name) {
   var plot; // TODO, we should support multiple lines here
   var canvas;
 
+	var CLASS_NDARRAY = "numpy.ndarray";
+	
   var create_chart = function() {
     /* test if Canvas ist available should be moved to create_chart function */
     if (Sk.canvas === undefined) {
@@ -1577,7 +1579,7 @@ var $builtinmodule = function(name) {
     }
   };
 
-  var plotk_f = function(kwa) {
+  var plot_f = function(kwa) {
     // http://matplotlib.org/api/pyplot_api.html
     // http://matplotlib.org/api/artist_api.html#matplotlib.lines.Line2D
     debugger;
@@ -1606,7 +1608,7 @@ var $builtinmodule = function(name) {
     var xdata_not_ydata_flag = true;
 
     for (i = 0; i < args.length; i++) {
-      if (args[i] instanceof Sk.builtin.list) {
+      if (args[i] instanceof Sk.builtin.list || Sk.abstr.typeName(args[i]) === CLASS_NDARRAY) {
         // unwraps x and y, but no 2-dim-data
         if (xdata_not_ydata_flag) {
           xdata.push(Sk.ffi.remapToJs(args[i]));
@@ -1673,8 +1675,8 @@ var $builtinmodule = function(name) {
 
     return new Sk.builtins.tuple(result);
   };
-  plotk_f.co_kwargs = true;
-  mod.plotk = new Sk.builtin.func(plotk_f);
+  plot_f.co_kwargs = true;
+  mod.plot = new Sk.builtin.func(plot_f);
 
   var show_f = function() {
     // call drawing routine

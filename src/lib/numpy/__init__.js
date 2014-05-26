@@ -428,7 +428,7 @@ var $builtinmodule = function(name) {
 
         var ndarrayJs = Sk.ffi.remapToJs(self);
 
-        if (other.tp$name === CLASS_NDARRAY) {
+        if (Sk.abstr.typeName(other) === CLASS_NDARRAY) {
           lhs = ndarrayJs.buffer;
           rhs = Sk.ffi.remapToJs(other).buffer;
           _buffer = [];
@@ -549,7 +549,7 @@ var $builtinmodule = function(name) {
       x = Sk.misceval.callsim(mod.array, x);
     }
 
-    if (x.tp$name === CLASS_NDARRAY) {
+    if (Sk.abstr.typeName(x) === CLASS_NDARRAY) {
       var ndarrayJs = Sk.ffi.remapToJs(x);
 
       var _buffer = ndarrayJs.buffer.map(function(value) {
