@@ -1564,7 +1564,11 @@ var $builtinmodule = function(name) {
   var plot; // TODO, we should support multiple lines here
   var canvas;
 
+	// import numpy
 	var CLASS_NDARRAY = "numpy.ndarray";
+	var np = Sk.importModule("numpy");
+	var NDARRAY_F = np['$d'].array.func_code;
+	//var ndarray = Sk.misceval.callsim(np['$d'].array.func_code, new Sk.builtin.list([1,2,3,4]));
 	
   var create_chart = function() {
     /* test if Canvas ist available should be moved to create_chart function */
@@ -1782,7 +1786,7 @@ var $builtinmodule = function(name) {
     // clear all
     chart = null;
     plot = null;
-
+		
     if (Sk.canvas !== undefined) {
       $('#' + Sk.canvas).empty();
     }
