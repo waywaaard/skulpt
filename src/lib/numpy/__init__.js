@@ -18,27 +18,17 @@ numpy.prototype.wrapasfloats = function(values) {
   return values;
 };
 
-numpy.prototype.arange = function(start, stop, step, type) {
+numpy.prototype.arange = function(start, stop, step) {
   if (step === undefined)
     step = 1.0;
 
-  if (type === undefined)
-    type = Sk.builtin.nmber.float$;
-
-  if (type == Sk.builtin.nmber.float$) {
-    start *= 1.0;
-    stop = Math.ceil((stop - start) / step);
-    step *= 1.0;
-  }
+  start *= 1.0;
+  stop *= 1.0;
+  step *= 1.0;
 
   var res = [];
-
   for (var i = start; i < stop; i += step) {
-    if (type == Sk.builtin.nmber.float$) {
-      res.push(new Sk.builtin.nmber(i, Sk.builtin.nmber.float$));
-    } else {
-      res.push(new Sk.builtin.nmber(i, Sk.builtin.nmber.int$));
-    }
+    res.push(i);
   }
 
   return res;
@@ -142,7 +132,7 @@ var $builtinmodule = function(name) {
 		Creates a string representation for given buffer and shape
 		buffer is an ndarray
 	**/
-  function stringify(buffer, shape) {
+  function stringify(buffer, shape, dtype) {
     var emits = shape.map(function(x) {
       return 0;
     });
@@ -160,7 +150,11 @@ var $builtinmodule = function(name) {
           str += "[";
           idxLevel += 1;
         } else {
-          str += Sk.ffi.remapToJs(Sk.builtin.str(buffer[i++]));
+          if (dtype === Sk.builtin.float_)
+            str += Sk.ffi.remapToJs(Sk.builtin.str(new Sk.builtin.float_(buffer[
+              i++])));
+          else
+            str += Sk.ffi.remapToJs(Sk.builtin.str(buffer[i++]));
           emits[idxLevel] += 1;
         }
       } else {
@@ -410,13 +404,13 @@ var $builtinmodule = function(name) {
     $loc.__str__ = new Sk.builtin.func(function(self) {
       var ndarrayJs = remapToJs_shallow(self, false);
       return new Sk.builtin.str(stringify(ndarrayJs.buffer,
-        ndarrayJs.shape));
+        ndarrayJs.shape, ndarrayJs.dtype));
     });
 
     $loc.__repr__ = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       return new Sk.builtin.str("array(" + stringify(ndarrayJs.buffer,
-        ndarrayJs.shape) + ")");
+        ndarrayJs.shape, ndarrayJs.dtype) + ")");
     });
 
     /**
@@ -696,36 +690,46 @@ var $builtinmodule = function(name) {
     start_num = Sk.builtin.asnum$(start) * 1.0;
     stop_num = Sk.builtin.asnum$(stop) * 1.0;
 
-    if (num_num <= 0)
-      return new Sk.builtin.list([]);
-
-    var samples_array;
-    if (endpoint_bool) {
-      if (num_num == 1)
-        return new Sk.builtin.list([new Sk.builtin.nmber(start_num,
-          Sk.builtin.nmber.float$)]);
-
-      step = (stop_num - start_num) / (num_num - 1);
-      samples_array = np.arange(0, num_num);
-      samples = np.onarray(samples_array, function(v) {
-        return v * step + start_num;
-      });
-      samples[samples.length - 1] = stop_num;
+    if (num_num <= 0) {
+      samples = [];
     } else {
-      step = (stop_num - start_num) / num_num;
-      samples_array = np.arange(0, num_num);
-      samples = np.onarray(samples_array, function(v) {
-        return v * step + start_num;
-      });
+
+      var samples_array;
+      if (endpoint_bool) {
+        if (num_num == 1) {
+          samples = [start_num];
+        } else {
+          step = (stop_num - start_num) / (num_num - 1);
+          samples_array = np.arange(0, num_num);
+          samples = samples_array.map(function(v) {
+            return v * step + start_num;
+          });
+          samples[samples.length - 1] = stop_num;
+        }
+      } else {
+        step = (stop_num - start_num) / num_num;
+        samples_array = np.arange(0, num_num);
+        samples = samples_array.map(function(v) {
+          return v * step + start_num;
+        });
+      }
     }
 
-    /* return tuple if retstep is true */
-    if (retstep_bool === true)
-      return new Sk.builtin.tuple([new Sk.builtin.list(np.wrapasfloats(
-        samples)), step]);
+    //return as ndarray! dtype:float
+    var dtype = Sk.builtin.float_;
+    for (i = 0; i < samples.length; i++) {
+      samples[i] = Sk.misceval.callsim(dtype, samples[i]);
+    }
 
-    // ToDo: return as ndarray! dtype:float
-    return new Sk.builtin.list(np.wrapasfloats(samples));
+    var buffer = Sk.builtin.list(samples);
+    var shape = new Sk.builtin.tuple([samples.length]);
+    var ndarray = Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, dtype,
+      buffer);
+
+    if (retstep_bool === true)
+      return new Sk.builtin.tuple([ndarray, step]);
+    else
+      return ndarray;
   };
 
   // this should allow for named parameters
@@ -761,17 +765,27 @@ var $builtinmodule = function(name) {
       step_num = Sk.builtin.asnum$(step);
     }
 
-    // set to float, if start is not int but a number
-    var type = Sk.builtin.nmber.int$;
-    if (!Sk.builtin.checkInt(start)) {
-      type = Sk.builtin.nmber.float$;
+    // set to float
+    if (!dtype || dtype == Sk.builtin.none.none$) {
+      if (Sk.builtin.checkInt(start))
+        dtype = Sk.builtin.int_;
+      else
+        dtype = Sk.builtin.float_;
     }
 
-    //ToDo: add here ndarray
+    // return ndarray
+    var arange_buffer = np.arange(start_num, stop_num, step_num);
+    // apply dtype casting function, if it has been provided
+    if (dtype && Sk.builtin.checkClass(dtype)) {
+      for (i = 0; i < arange_buffer.length; i++) {
+        arange_buffer[i] = Sk.misceval.callsim(dtype, arange_buffer[i]);
+      }
+    }
 
-    // return as list, dunno how to work with arrays.
-    return new Sk.builtin.list(np.arange(start_num, stop_num,
-      step_num, type));
+    buffer = Sk.builtin.list(arange_buffer);
+    var shape = new Sk.builtin.tuple([arange_buffer.length]);
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, dtype,
+      buffer);
   };
 
   arange_f.co_varnames = ['start', 'stop', 'step', 'dtype'];
@@ -973,6 +987,8 @@ var $builtinmodule = function(name) {
   var dot_f = function(a, b) {
     Sk.builtin.pyCheckArgs("dot", arguments, 2, 2);
 
+    // ToDo: add support for ndarray args
+
     if (!(a instanceof Sk.builtin.list) && !Sk.builtin.checkNumber(
       a)) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(a) +
@@ -1004,9 +1020,13 @@ var $builtinmodule = function(name) {
 
     res = np.math.multiply(a_matrix, b_matrix);
 
-    // ToDo: return ndarray
-
-    return Sk.ffi.remapToPy(res);
+    // return ndarray
+    var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+      return new Sk.builtin.int_(x);
+    }));
+    buffer = new Sk.builtin.list(res);
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, Sk.builtin.float_,
+      buffer);
   };
   dot_f.co_varnames = ['a', 'b'];
   dot_f.$defaults = [Sk.builtin.none.none$,
@@ -1030,6 +1050,10 @@ var $builtinmodule = function(name) {
   mod.empty = new Sk.builtin.func(function() {
     throw new Sk.builtin.NotImplementedError(
       "empty is not yet implemented");
+  });
+  mod.arctan2 = new Sk.builtin.func(function() {
+    throw new Sk.builtin.NotImplementedError(
+      "arctan2 is not yet implemented");
   });
   mod.asarray = new Sk.builtin.func(array_f);
   return mod;
