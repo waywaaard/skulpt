@@ -994,21 +994,33 @@ var $builtinmodule = function(name) {
     // ToDo: add support for ndarray args
 
     if (!(a instanceof Sk.builtin.list) && !Sk.builtin.checkNumber(
-      a)) {
+      a) && (Sk.abstr.typeName(a) !== CLASS_NDARRAY)) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(a) +
         "' is not supported for a.");
     }
 
     if (!(b instanceof Sk.builtin.list) && !Sk.builtin.checkNumber(
-      b)) {
+      b) && (Sk.abstr.typeName(b) !== CLASS_NDARRAY)) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(b) +
         "' is not supported for b.");
     }
 
     var res;
 
-    var a_matrix = Sk.ffi.remapToJs(a);
-    var b_matrix = Sk.ffi.remapToJs(b);
+    var b_matrix;
+    var a_matrix;
+
+    if(Sk.abstr.typeName(a) === CLASS_NDARRAY) {
+      a_matrix = Sk.ffi.remapToJs(a.v.buffer);
+    } else {
+      a_matrix = Sk.ffi.remapToJs(a);
+    }
+
+    if(Sk.abstr.typeName(b) === CLASS_NDARRAY) {
+      b_matrix = Sk.ffi.remapToJs(b.v.buffer);
+    } else {
+      b_matrix = Sk.ffi.remapToJs(b);
+    }
 
     var a_size = np.math.size(a_matrix);
     var b_size = np.math.size(b_matrix);
