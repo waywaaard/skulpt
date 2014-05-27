@@ -668,7 +668,7 @@ var $builtinmodule = function(name) {
       start));
     Sk.builtin.pyCheckType("stop", "number", Sk.builtin.checkNumber(
       stop));
-
+    debugger;
     if (num === undefined) {
       num = 50;
     }
