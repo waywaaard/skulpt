@@ -1565,10 +1565,11 @@ var $builtinmodule = function(name) {
   var canvas;
 
 	// import numpy
-	var CLASS_NDARRAY = "numpy.ndarray";
+	var CLASS_NDARRAY = "numpy.ndarray"; // maybe make identifier accessible in numpy module
 	var np = Sk.importModule("numpy");
-	var NDARRAY_F = np['$d'].array.func_code;
-	//var ndarray = Sk.misceval.callsim(np['$d'].array.func_code, new Sk.builtin.list([1,2,3,4]));
+	var ndarray_f = np['$d'].array.func_code;
+	var getitem_f = np['$d'][CLASS_NDARRAY]['__getitem__'].func_code;
+	var ndarray = Sk.misceval.callsim(np['$d'].array.func_code, new Sk.builtin.list([1,2,3,4]));
 	
   var create_chart = function() {
     /* test if Canvas ist available should be moved to create_chart function */
@@ -1586,7 +1587,7 @@ var $builtinmodule = function(name) {
   var plot_f = function(kwa) {
     // http://matplotlib.org/api/pyplot_api.html
     // http://matplotlib.org/api/artist_api.html#matplotlib.lines.Line2D
-    debugger;
+    //debugger;
     Sk.builtin.pyCheckArgs("plotk", arguments, 1, Infinity, true, false);
     args = Array.prototype.slice.call(arguments, 1);
     kwargs = new Sk.builtins.dict(kwa); // is pretty useless for handling kwargs
@@ -1610,15 +1611,32 @@ var $builtinmodule = function(name) {
     var i = 0;
     var lines = 0;
     var xdata_not_ydata_flag = true;
-
+		var slice = new Sk.builtin.slice(0, undefined, 1); // getting complete first dimension of ndarray
+		
     for (i = 0; i < args.length; i++) {
       if (args[i] instanceof Sk.builtin.list || Sk.abstr.typeName(args[i]) === CLASS_NDARRAY) {
+				// special treatment for ndarrays, though we allow basic lists too
+				var _unpacked;
+				if(Sk.abstr.typeName(args[i]) === CLASS_NDARRAY) {
+					// we get the first dimension, no 2-dim data 
+					_unpacked = Sk.ffi.unwrapn(args[i]);
+					var first_dim_size = 0; 
+					if(_unpacked && _unpacked.shape && _unpacked.shape[0]){
+						first_dim_size = _unpacked.shape[0];
+					} else {
+						throw new Sk.builtin.ValueError('args contain "' + CLASS_NDARRAY + '" without elements or malformed shape.');
+					}
+					_unpacked = _unpacked.buffer.slice(0, first_dim_size); // buffer array of first dimension
+				} else {
+					_unpacked = Sk.ffi.remapToJs(args[i]);
+				}
+				
         // unwraps x and y, but no 2-dim-data
         if (xdata_not_ydata_flag) {
-          xdata.push(Sk.ffi.remapToJs(args[i]));
+          xdata.push(_unpacked);
           xdata_not_ydata_flag = false;
         } else {
-          ydata.push(Sk.ffi.remapToJs(args[i]));
+          ydata.push(_unpacked);
           xdata_not_ydata_flag = true;
         }
       } else if (Sk.builtin.checkString(args[i])) {
@@ -1786,7 +1804,7 @@ var $builtinmodule = function(name) {
     // clear all
     chart = null;
     plot = null;
-		
+				
     if (Sk.canvas !== undefined) {
       $('#' + Sk.canvas).empty();
     }
