@@ -816,11 +816,33 @@ jsplotlib.plot = function(chart) {
 
   that.update = function(kwargs) {
     var i;
-
+		
+		// pass to lines
     for (i = 0; i < this._lines.length; i++) {
       this._lines[i].update(kwargs);
     }
 
+		// update own kwargs
+		if (kwargs && typeof kwargs === "object") {
+      for (var key in kwargs) {
+        if (kwargs.hasOwnProperty(key)) {
+          var val = kwargs[key];
+
+          switch (key) {
+            case 'title':
+              this.title(val);
+              break;
+            case 'xlabel':
+							this.xlabel(val);
+              break;
+            case 'ylabel':
+							this.ylabel(val);
+							break;
+          }
+        }
+      }
+    }
+		
     return this;
   };
 
@@ -1722,7 +1744,13 @@ var $builtinmodule = function(name) {
     }
 
     var label_unwrap = Sk.ffi.remapToJs(label);
-
+		
+		create_chart();
+    // create new plot instance, should be replaced with Line2D and then added to the plot
+    if (!plot) {
+      plot = jsplotlib.plot(chart);
+    }
+		
     if (plot && plot.title) {
       plot.title(label_unwrap);
     }
@@ -1768,7 +1796,13 @@ var $builtinmodule = function(name) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(s) +
         "' is not supported for s.");
     }
-
+		
+		create_chart();
+    // create new plot instance, should be replaced with Line2D and then added to the plot
+    if (!plot) {
+      plot = jsplotlib.plot(chart);
+    }
+		
     if (plot && plot.xlabel) {
       plot.xlabel(Sk.ffi.remapToJs(s));
     }
@@ -1787,7 +1821,13 @@ var $builtinmodule = function(name) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(s) +
         "' is not supported for s.");
     }
-
+		
+		create_chart();
+    // create new plot instance, should be replaced with Line2D and then added to the plot
+    if (!plot) {
+      plot = jsplotlib.plot(chart);
+    }
+		
     if (plot && plot.ylabel) {
       plot.ylabel(Sk.ffi.remapToJs(s));
     }
