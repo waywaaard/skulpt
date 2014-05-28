@@ -510,11 +510,14 @@ var $builtinmodule = function(name) {
       };
     }
 
+    /*
+      Applies given operation on each element of the ndarray.
+    */
     function makeUnaryOp(operation) {
       return function(self) {
         var ndarrayJs = Sk.ffi.remapToJs(self);
         var _buffer = ndarrayJs.buffer.map(function(value) {
-          return Sk.abstr.numberUnaryOp(value, operation);
+          return Sk.abstr.numberUnaryOp(Sk.ffi.remapToPy(value), operation);
         });
         var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
           return new Sk.builtin.int_(x);
