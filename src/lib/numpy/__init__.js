@@ -169,10 +169,9 @@ var $builtinmodule = function(name) {
     return str;
   }
 
-  function ndmin(shape) {
-    return shape.length;
-  }
-
+  /*
+    http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.tolist.html?highlight=tolist#numpy.ndarray.tolist
+  */
   function tolistrecursive(buffer, shape, strides, startdim, dtype) {
     var i, n, stride;
     var arr, item;
@@ -262,6 +261,12 @@ var $builtinmodule = function(name) {
     // ndmin cannot be set, etc...
     $loc.tp$setattr = Sk.builtin.object.prototype.GenericSetAttr;
 
+    /*
+      Return the array as a (possibly nested) list.
+
+      Return a copy of the array data as a (nested) Python list. Data items are
+      converted to the nearest compatible Python type.
+    */
     $loc.tolist = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       var list = tolist(ndarrayJs.buffer, ndarrayJs.shape, ndarrayJs.strides, ndarrayJs.dtype);
