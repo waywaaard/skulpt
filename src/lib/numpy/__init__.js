@@ -169,6 +169,43 @@ var $builtinmodule = function(name) {
     return str;
   }
 
+  function ndmin(shape) {
+    return shape.length;
+  }
+
+  function tolistrecursive(buffer, shape, strides, startdim, dtype) {
+    var i, n, stride;
+    var arr, item;
+
+    /* Base case */
+    if (startdim >= shape.length) {
+      if (dtype && dtype === Sk.builtin.float_) {
+        return new Sk.builtin.float_(buffer[0]); // handle float special case
+      } else {
+        return Sk.ffi.remapToPy(buffer[0]);
+      }
+    }
+
+    n = shape[startdim];
+    stride = strides[startdim];
+
+    arr = [];
+
+    for (i = 0; i < n; i++) {
+      item = tolistrecursive(buffer, shape, strides, startdim + 1, dtype);
+      arr.push(item);
+
+      buffer = buffer.slice(stride);
+    }
+
+    return new Sk.builtin.list(arr);
+  }
+
+  function tolist(buffer, shape, strides, dtype) {
+    var buffer_copy = buffer.slice(0);
+    return tolistrecursive(buffer_copy, shape, strides, 0, dtype);
+  }
+
   /**
     Updates all attributes of the numpy.ndarray
   **/
@@ -227,11 +264,9 @@ var $builtinmodule = function(name) {
 
     $loc.tolist = new Sk.builtin.func(function(self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
-      var buffer = ndarrayJs.buffer.map(function(x) {
-        return x;
-      });
+      var list = tolist(ndarrayJs.buffer, ndarrayJs.shape, ndarrayJs.strides, ndarrayJs.dtype);
 
-      return new Sk.builtin.list(buffer);
+      return list;
     });
 
     $loc.reshape = new Sk.builtin.func(function(self, shape, order) {
@@ -545,7 +580,7 @@ var $builtinmodule = function(name) {
   function callTrigonometricFunc(x, op) {
     var res;
     var num;
-    if(x instanceof Sk.builtin.list || x instanceof Sk.builtin.tuple){
+    if (x instanceof Sk.builtin.list || x instanceof Sk.builtin.tuple) {
       x = Sk.misceval.callsim(mod.array, x);
     }
 
@@ -668,7 +703,6 @@ var $builtinmodule = function(name) {
       start));
     Sk.builtin.pyCheckType("stop", "number", Sk.builtin.checkNumber(
       stop));
-    debugger;
     if (num === undefined) {
       num = 50;
     }
@@ -1010,13 +1044,13 @@ var $builtinmodule = function(name) {
     var b_matrix;
     var a_matrix;
 
-    if(Sk.abstr.typeName(a) === CLASS_NDARRAY) {
+    if (Sk.abstr.typeName(a) === CLASS_NDARRAY) {
       a_matrix = Sk.ffi.remapToJs(a.v.buffer);
     } else {
       a_matrix = Sk.ffi.remapToJs(a);
     }
 
-    if(Sk.abstr.typeName(b) === CLASS_NDARRAY) {
+    if (Sk.abstr.typeName(b) === CLASS_NDARRAY) {
       b_matrix = Sk.ffi.remapToJs(b.v.buffer);
     } else {
       b_matrix = Sk.ffi.remapToJs(b);
