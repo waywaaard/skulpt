@@ -7,7 +7,9 @@
     <meta name="description" content="Skulpt + numpy/matplotlib.pyplot : Skulpt is a Javascript implementation of the Python programming language" />
 
     <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
-
+		<link rel="stylesheet" type="text/css" media="screen" href="stylesheets/codemirror.css">
+		<link rel="stylesheet" type="text/css" media="screen" href="stylesheets/foldgutter.css">
+		<link rel="stylesheet" type="text/css" media="screen" href="stylesheets/show-hint.css">
     <title>Skulpt + numpy/matplotlib.pyplot</title>
   </head>
 
@@ -35,7 +37,11 @@
 <a name="skulpt-with-numpy-and-matplotlib" class="anchor" href="#skulpt-with-numpy-and-matplotlib"><span class="octicon octicon-link"></span></a>Skulpt with numpy and matplotlib</h1>
 
 <p>This is a fork the skulpt/skulpt project, that adds support for basic numpy (ndarrays) and matplotlib (pyplot) support. See the next headlines for supported functions and attributes.</p>
-
+<div>
+<textarea class="pythoncm" data-fold-line="" data-canvas="mycanvas" data-description="Try out" data-file-name="freefall.py" data-eval="false" data-static-url="" data-imports="" id="python1" name="python1" cols="40" rows="40">freefall.py</textarea>
+</div>
+<div id="mycanvas">
+</div>
 <h2>
 <a name="python-specific" class="anchor" href="#python-specific"><span class="octicon octicon-link"></span></a>Python specific</h2>
 
@@ -300,6 +306,17 @@ benefit.</p></li>
     </div>
 
     
-
+		<script src="javascripts/jquery-1.11.0.min.js"></script>
+		<script src="javascripts/codemirror/codemirror.js"></script>
+		<script src="javascripts/codemirror/show-hint.js"></script>  
+		<script src="javascripts/codemirror/python.js"></script>
+		<script src="javascripts/codemirror/python-hint.js"></script>
+		<script src="javascripts/codemirror/foldcode.js"></script>
+		<script src="javascripts/codemirror/foldgutter.js"></script>
+		<script src="javascripts/codemirror/indent-fold.js"></script>
+		<script src="javascripts/codemirror/comment-fold.js"></script>
+		<script src="javascripts/skulpt.js"></script>
+		<script src="javascripts/skulpt-stdlib.js"></script>
+		<script src="javascripts/main.js"></script>
   </body>
 </html>
