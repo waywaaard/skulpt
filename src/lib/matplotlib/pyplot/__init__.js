@@ -1,4 +1,8 @@
 /**
+	Made by Michael Ebert for skulpt, see this modules at https://github.com/waywaaard/skulpt
+	
+	matplotlib.pyplot inspired by https://github.com/rameshvs/jsplotlib, though heavily modified.
+	
   jsplotlib for supporting plot commands and kwargs for the matplotlib skulpt module
   Supports:
     - kwargs

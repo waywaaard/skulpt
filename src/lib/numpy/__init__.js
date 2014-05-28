@@ -1,4 +1,11 @@
-/* Simple module for some numpy functions */
+/** 
+	Made by Michael Ebert for https://github.com/skulpt/skulpt
+	ndarray implementation inspired by https://github.com/geometryzen/davinci-dev (not compatible with skulpt)
+	
+	Some methods are based on the original numpy implementation.
+	
+	See http://waywaaard.github.io/skulpt/ for more information.
+**/
 
 var numpy = function() {
   if (typeof mathjs == 'function') {
@@ -73,9 +80,7 @@ var $builtinmodule = function(name) {
 
       if (state.level > state.shape.length) {
         state.shape.push(py_items.length);
-      } else {
-        // check for equality
-      }
+      } 
       var i;
       var len = py_items.length;
       for (i = 0; i < len; i++) {
@@ -199,7 +204,10 @@ var $builtinmodule = function(name) {
 
     return new Sk.builtin.list(arr);
   }
-
+	
+	/** 
+	 internal tolist interface
+	**/
   function tolist(buffer, shape, strides, dtype) {
     var buffer_copy = buffer.slice(0);
     return tolistrecursive(buffer_copy, shape, strides, 0, dtype);
