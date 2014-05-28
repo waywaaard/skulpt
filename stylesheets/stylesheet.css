@@ -264,7 +264,7 @@ Full-Width Styles
 
 .inner {
   position: relative;
-  max-width: 640px;
+  max-width: 910px;
   padding: 20px 10px;
   margin: 0 auto;
 }
@@ -420,4 +420,32 @@ Small Device Styles
     font-size: 11px;
   }
 
+}
+
+.panel.panel-default {
+	margin-top: 20px;
+	background-color: #f5f5f5;
+}
+
+.panel-codepiece {
+	margin-top: 20px;
+}
+
+.name-label {
+	margin-right: 5px;
+	margin-left: 5px;
+	font-size: 80%;
+}
+
+.btn-run, .btn-clear {
+	margin-right: 5px;
+}
+
+.CodeMirror {
+	border: 1px solid #eee;
+	height: auto;
+}
+.CodeMirror-scroll {
+	overflow-y: hidden;
+	overflow-x: auto;
 }
