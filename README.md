@@ -1,10 +1,10 @@
 #This fork adds:
 
-Python specific
+## Python specific
 - [x] __issubclass__ builtin
 - [x] __name__ attribute on classes/types
 
-numpy:
+## numpy:
 - [x] ndarray (working, missing functions)
 - [x] linspace
 - [x] array 
@@ -12,6 +12,9 @@ numpy:
 - [x] zeros
 - [x] arange
 - [x] asarray that maps to array (no real functionality, though not needed on a python-js-interpreter)
+
+### ndarray specific
+- [x] ToDo
 
 Some of the trigonmetric functions aswell ```dot``` requires https://github.com/josdejong/mathjs to work.
 However most functions have a fallback, otherwise an OperationError will be thrown
