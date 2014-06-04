@@ -985,30 +985,6 @@ Sk.builtin.quit = function quit(msg) {
     throw new Sk.builtin.SystemExit(s);
 }
 
-Sk.builtin.pow = function pow(x, y, z) {
-	Sk.builtin.pyCheckArgs("pow", arguments, 2, 3);
-	if (!Sk.builtin.checkNumber(x) || !Sk.builtin.checkNumber(y))
-	{
-		throw new Sk.builtin.TypeError("pow() arg 1 and 2 must be of a numeric type");
-	}
-	
-	var res = x.nb$power(y);
-	
-	if(z)
-	{
-		if(Sk.builtin.checkNumber(z))
-		{
-			res = res.nb$remainder(z);
-		}
-		else
-		{
-			throw new Sk.builtin.TypeError("unsupported operand type(s) for pow(): '%s', '%s', '%s'" %(x.sk$type, y.sk$type, z.sk$type))
-		}		
-	}
-	
-	return res;
-}
-
 Sk.builtin.issubclass = function issubclass(c1, c2) 
 { 
     Sk.builtin.pyCheckArgs("issubclass", arguments, 2, 2);
