@@ -232,7 +232,7 @@ def debugbrowser():
 
 def buildVFS():
     """ build a silly virtual file system to support 'read'"""
-    print(". Slurping test data")
+    print ". Slurping test data"
     with open("support/tmp/vfs.js", "w") as out:
         print >>out, "VFSData = {"
         all = []
@@ -344,7 +344,7 @@ function quit(rc)
 });
 """
     out.close()
-    print(". Built %s" % outfn)
+    print ". Built %s" % outfn
 
 
 def getBuiltinsAsJson(options):
@@ -357,7 +357,7 @@ def getBuiltinsAsJson(options):
                 ext = os.path.splitext(f)[1]
                 if ext == ".py" or ext == ".js":
                     if options.verbose:
-                        print("reading", f)
+                        print "reading", f
                     f = f.replace("\\", "/")
                     ret['files'][f] = open(f).read()
     return "Sk.builtinFiles=" + json.dumps(ret)
@@ -369,32 +369,32 @@ def dist(options):
     """
     if GIT_MODULE_AVAILABLE:
         if not isClean():
-            print("WARNING: working directory not clean (according to 'git status')")
+            print "WARNING: working directory not clean (according to 'git status')"
         else:
-            print("Working directory is clean (according to 'git status')")
+            print "Working directory is clean (according to 'git status')"
     else:
-        print ("+----------------------------------------------------------------------------+")
-        print ("GitPython is not installed for Python 2.6")
-        print ("The 'dist' command will not work without it.  Get it using pip or easy_install")
-        print ("or see:  http://packages.python.org/GitPython/0.3.1/intro.html#getting-started")
-        print ("+----------------------------------------------------------------------------+")
+        print "+----------------------------------------------------------------------------+"
+        print "GitPython is not installed for Python 2.6"
+        print "The 'dist' command will not work without it.  Get it using pip or easy_install"
+        print "or see:  http://packages.python.org/GitPython/0.3.1/intro.html#getting-started"
+        print "+----------------------------------------------------------------------------+"
 
     if options.verbose:
-        print (". Removing distribution directory, '{0}/'.".format(DIST_DIR))
+        print ". Removing distribution directory, '{0}/'.".format(DIST_DIR)
 
     os.system("rm -rf {0}/".format(DIST_DIR))
     if not os.path.exists(DIST_DIR): os.mkdir(DIST_DIR)
 
     if options.uncompressed:
         if options.verbose:
-            print(". Writing combined version...")
+            print ". Writing combined version..."
         combined = ''
         linemap = open("{0}/{1}".format(DIST_DIR, OUTFILE_MAP), "w")
         curline = 1
         for file in getFileList(FILE_TYPE_DIST):
             curfiledata = open(file).read()
             combined += curfiledata
-            print(linemap, "%d:%s" % (curline, file))
+            print >>linemap, "%d:%s" % (curline, file)
             curline += len(curfiledata.split("\n")) - 1
         linemap.close()
         uncompfn = "{0}/{1}".format(DIST_DIR, OUTFILE_REG)
@@ -409,18 +409,18 @@ def dist(options):
 
     # Run tests on uncompressed.
     if options.verbose:
-        print(". Running tests on uncompressed...")
+        print ". Running tests on uncompressed..."
 
     ret = test()
     if ret != 0:
-        print("Tests failed on uncompressed version.")
-        #sys.exit(1);
+        print "Tests failed on uncompressed version."
+        sys.exit(1);
 
     # compress
     uncompfiles = ' '.join(['--js ' + x for x in getFileList(FILE_TYPE_DIST)])
 
     if options.verbose:
-        print(". Compressing...")
+        print ". Compressing..."
 
     ret = os.system("java -jar support/closure-compiler/compiler.jar --define goog.DEBUG=false --output_wrapper \"(function(){%%output%%}());\" --compilation_level SIMPLE_OPTIMIZATIONS --jscomp_error accessControls --jscomp_error checkRegExp --jscomp_error checkTypes --jscomp_error checkVars --jscomp_error deprecated --jscomp_off fileoverviewTags --jscomp_error invalidCasts --jscomp_error missingProperties --jscomp_error nonStandardJsDocs --jscomp_error strictModuleDepCheck --jscomp_error undefinedVars --jscomp_error unknownDefines --jscomp_error visibility %s --js_output_file %s" % (uncompfiles, compfn))
     # to disable asserts
@@ -432,48 +432,48 @@ def dist(options):
     # --jscomp_error accessControls --jscomp_error checkRegExp --jscomp_error checkTypes --jscomp_error checkVars --jscomp_error deprecated --jscomp_error fileoverviewTags --jscomp_error invalidCasts --jscomp_error missingProperties --jscomp_error nonStandardJsDocs --jscomp_error strictModuleDepCheck --jscomp_error undefinedVars --jscomp_error unknownDefines --jscomp_error visibility
     #
     if ret != 0:
-        print("closure-compiler failed.")
-        #sys.exit(1)
+        print "closure-compiler failed."
+        sys.exit(1)
 
     # Run tests on compressed.
     if options.verbose:
-        print(". Running tests on compressed...")
+        print ". Running tests on compressed..."
     ret = os.system("{0} {1} {2}".format(jsengine, compfn, ' '.join(TestFiles)))
     if ret != 0:
-        print("Tests failed on compressed version.")
-        #sys.exit(1)
+        print "Tests failed on compressed version."
+        sys.exit(1)
 
     ret = os.system("cp {0} {1}/tmp.js".format(compfn, DIST_DIR))
     if ret != 0:
-        print("Couldn't copy for gzip test.")
-        #sys.exit(1)
+        print "Couldn't copy for gzip test."
+        sys.exit(1)
 
     ret = os.system("gzip -9 {0}/tmp.js".format(DIST_DIR))
     if ret != 0:
-        print("Couldn't gzip to get final size.")
-        #sys.exit(1)
+        print "Couldn't gzip to get final size."
+        sys.exit(1)
 
     size = os.path.getsize("{0}/tmp.js.gz".format(DIST_DIR))
     os.unlink("{0}/tmp.js.gz".format(DIST_DIR))
-	
+
     with open(builtinfn, "w") as f:
         f.write(getBuiltinsAsJson(options))
         if options.verbose:
-            print(". Wrote {0}".format(builtinfn))
+            print ". Wrote {0}".format(builtinfn)
 
     # Update documentation folder copies of the distribution.
     ret  = os.system("cp {0} doc/static/{1}".format(compfn,    OUTFILE_MIN))
     ret |= os.system("cp {0} doc/static/{1}".format(builtinfn, OUTFILE_LIB))
     if ret != 0:
-        print("Couldn't copy to docs dir.")
-        #sys.exit(1)
+        print "Couldn't copy to docs dir."
+        sys.exit(1)
     if options.verbose:
-        print(". Updated doc dir")
+        print ". Updated doc dir"
 
     # All good!
     if options.verbose:
-        print (". Wrote {0}.".format(compfn))
-        print (". gzip of compressed: %d bytes" % size)
+        print ". Wrote {0}.".format(compfn)
+        print ". gzip of compressed: %d bytes" % size
 
 def regenparser():
     """regenerate the parser/ast source code"""
@@ -520,7 +520,7 @@ def regenruntests(togen="{0}/run/*.py".format(TEST_DIR)):
 
 def symtabdump(fn):
     if not os.path.exists(fn):
-        print( "%s doesn't exist" % fn)
+        print "%s doesn't exist" % fn
         raise SystemExit()
     text = open(fn).read()
     mod = symtable.symtable(text, os.path.split(fn)[1], "exec")
@@ -578,7 +578,7 @@ def upload():
     """uploads doc to GAE (stub app for static hosting, mostly)"""
     ret = os.system("python2.6 ~/Desktop/3rdparty/google_appengine/appcfg.py update doc")
     if ret != 0:
-        print("Couldn't upload.")
+        print "Couldn't upload."
         raise SystemExit()
 
 def doctest():
@@ -589,11 +589,11 @@ def docbi(options):
     with open(builtinfn, "w") as f:
         f.write(getBuiltinsAsJson(options))
         if options.verbose:
-            print(". Wrote {fileName}".format(fileName=builtinfn))
+            print ". Wrote {fileName}".format(fileName=builtinfn)
 
 def run(fn, shell="", opt=False, p3=False):
     if not os.path.exists(fn):
-        print("%s doesn't exist" % fn)
+        print "%s doesn't exist" % fn
         raise SystemExit()
     if not os.path.exists("support/tmp"):
         os.mkdir("support/tmp")
@@ -643,12 +643,12 @@ def nrt():
                 editor = 'vim'
             os.system(editor + ' ' + fn)
             if os.path.exists(fn):
-                print("Generating tests for %s" % fn)
+                print "Generating tests for %s" % fn
                 regensymtabtests(fn)
                 regenasttests(fn)
                 regenruntests(fn)
             else:
-                print("run ./m regentests t%02d.py" % i)
+                print "run ./m regentests t%02d.py" % i
             break
 
 def vmwareregr(names):
@@ -710,9 +710,9 @@ def regengooglocs():
             if not m.startswith("goog."): continue
             print >>glf, "goog.require('%s');" % m
 
-import http.server
-import urllib.parse
-class HttpHandler(http.server.SimpleHTTPRequestHandler):
+import SimpleHTTPServer
+import urlparse
+class HttpHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     """allow grabbing any file for testing, and support /import
     which grabs all builtin and lib modules in a json request.
 
@@ -730,14 +730,14 @@ class HttpHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(getBuiltinsAsJson(None))
         else:
-            http.server.SimpleHTTPRequestHandler.do_GET(self)
+            SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
 def host():
     """simple http host from root of dir for testing"""
     import SocketServer
     PORT = 20710
     httpd = SocketServer.TCPServer(("", PORT), HttpHandler)
-    print("serving at port", PORT)
+    print "serving at port", PORT
     httpd.serve_forever()
 
 def usageString(program):
@@ -814,7 +814,7 @@ def main():
             togen = "{0}/run/".format(TEST_DIR) + sys.argv[2]
         else:
             togen = "{0}/run/*.py".format(TEST_DIR)
-        print("generating tests for ", togen)
+        print "generating tests for ", togen
         regensymtabtests(togen)
         regenasttests(togen)
         regenruntests(togen)
@@ -855,7 +855,7 @@ def main():
     elif cmd == "repl":
         repl()
     else:
-        print( usageString(os.path.basename(sys.argv[0])))
+        print usageString(os.path.basename(sys.argv[0]))
         sys.exit(2)
 
 if __name__ == "__main__":
