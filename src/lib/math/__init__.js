@@ -9,6 +9,7 @@ var $builtinmodule = function(name)
 	else
 	{
 		print("mathjs not included and callable");
+		var math = Math;
 	}
 	
     mod.pi = Sk.builtin.assk$(math.PI, Sk.builtin.nmber.float$);

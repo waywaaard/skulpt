@@ -1,13 +1,13 @@
-/** 
+/**
 	Made by Michael Ebert for https://github.com/skulpt/skulpt
 	ndarray implementation inspired by https://github.com/geometryzen/davinci-dev (not compatible with skulpt)
-	
+
 	Some methods are based on the original numpy implementation.
-	
+
 	See http://waywaaard.github.io/skulpt/ for more information.
 **/
 
-var numpy = function() {
+var numpy = function () {
   if (typeof mathjs == 'function') {
     // load mathjs instance
     this.math = mathjs();
@@ -16,7 +16,7 @@ var numpy = function() {
   }
 };
 
-numpy.prototype.wrapasfloats = function(values) {
+numpy.prototype.wrapasfloats = function (values) {
   var i;
   for (i = 0; i < values.length; i++) {
     values[i] = new Sk.builtin.nmber(values[i], Sk.builtin.nmber.float$);
@@ -25,7 +25,7 @@ numpy.prototype.wrapasfloats = function(values) {
   return values;
 };
 
-numpy.prototype.arange = function(start, stop, step) {
+numpy.prototype.arange = function (start, stop, step) {
   if (step === undefined)
     step = 1.0;
 
@@ -41,7 +41,7 @@ numpy.prototype.arange = function(start, stop, step) {
   return res;
 };
 
-var $builtinmodule = function(name) {
+var $builtinmodule = function (name) {
   var np = new numpy();
 
   var mod = {};
@@ -80,7 +80,7 @@ var $builtinmodule = function(name) {
 
       if (state.level > state.shape.length) {
         state.shape.push(py_items.length);
-      } 
+      }
       var i;
       var len = py_items.length;
       for (i = 0; i < len; i++) {
@@ -138,7 +138,7 @@ var $builtinmodule = function(name) {
 		buffer is an ndarray
 	**/
   function stringify(buffer, shape, dtype) {
-    var emits = shape.map(function(x) {
+    var emits = shape.map(function (x) {
       return 0;
     });
     var uBound = shape.length - 1;
@@ -204,8 +204,8 @@ var $builtinmodule = function(name) {
 
     return new Sk.builtin.list(arr);
   }
-	
-	/** 
+
+  /**
 	 internal tolist interface
 	**/
   function tolist(buffer, shape, strides, dtype) {
@@ -220,11 +220,11 @@ var $builtinmodule = function(name) {
     Sk.abstr.sattr(self, 'ndmin', new Sk.builtin.int_(ndarrayJs.shape.length));
     Sk.abstr.sattr(self, 'dtype', ndarrayJs.dtype);
     Sk.abstr.sattr(self, 'shape', new Sk.builtin.tuple(ndarrayJs.shape.map(
-      function(x) {
+      function (x) {
         return new Sk.builtin.int_(x);
       })));
     Sk.abstr.sattr(self, 'strides', new Sk.builtin.tuple(ndarrayJs.strides.map(
-      function(x) {
+      function (x) {
         return new Sk.builtin.int_(x);
       })));
     Sk.abstr.sattr(self, 'size', new Sk.builtin.int_(prod(ndarrayJs.shape)));
@@ -244,8 +244,8 @@ var $builtinmodule = function(name) {
     For more information, refer to the numpy module and examine the the methods and
     attributes of an array.
   **/
-  var ndarray_f = function($gbl, $loc) {
-    $loc.__init__ = new Sk.builtin.func(function(self, shape, dtype, buffer,
+  var ndarray_f = function ($gbl, $loc) {
+    $loc.__init__ = new Sk.builtin.func(function (self, shape, dtype, buffer,
       offset, strides, order) {
       var ndarrayJs = {}; // js object holding the actual array
       ndarrayJs.shape = Sk.ffi.remapToJs(shape);
@@ -275,27 +275,28 @@ var $builtinmodule = function(name) {
       Return a copy of the array data as a (nested) Python list. Data items are
       converted to the nearest compatible Python type.
     */
-    $loc.tolist = new Sk.builtin.func(function(self) {
+    $loc.tolist = new Sk.builtin.func(function (self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
-      var list = tolist(ndarrayJs.buffer, ndarrayJs.shape, ndarrayJs.strides, ndarrayJs.dtype);
+      var list = tolist(ndarrayJs.buffer, ndarrayJs.shape, ndarrayJs.strides,
+        ndarrayJs.dtype);
 
       return list;
     });
 
-    $loc.reshape = new Sk.builtin.func(function(self, shape, order) {
+    $loc.reshape = new Sk.builtin.func(function (self, shape, order) {
       Sk.builtin.pyCheckArgs("reshape", arguments, 2, 3);
       var ndarrayJs = Sk.ffi.remapToJs(self);
       return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, ndarrayJs.dtype,
         new Sk.builtin.list(ndarrayJs.buffer));
     });
 
-    $loc.copy = new Sk.builtin.func(function(self, order) {
+    $loc.copy = new Sk.builtin.func(function (self, order) {
       Sk.builtin.pyCheckArgs("copy", arguments, 1, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
-      var buffer = ndarrayJs.buffer.map(function(x) {
+      var buffer = ndarrayJs.buffer.map(function (x) {
         return x;
       });
-      var shape = new Sk.builtin.tuplePy(ndarrayJs.shape.map(function(x) {
+      var shape = new Sk.builtin.tuplePy(ndarrayJs.shape.map(function (x) {
         return new Sk.builtin.int_(x);
       }));
       return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, ndarrayJs.dtype,
@@ -307,10 +308,10 @@ var $builtinmodule = function(name) {
       Parameters: value: scalar
                     All elements of a will be assigned this value
     **/
-    $loc.fill = new Sk.builtin.func(function(self, value) {
+    $loc.fill = new Sk.builtin.func(function (self, value) {
       Sk.builtin.pyCheckArgs("fill", arguments, 2, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
-      var buffer = ndarrayJs.buffer.map(function(x) {
+      var buffer = ndarrayJs.buffer.map(function (x) {
         return x;
       });
       var i;
@@ -322,7 +323,7 @@ var $builtinmodule = function(name) {
       }
     });
 
-    $loc.__getitem__ = new Sk.builtin.func(function(self, index) {
+    $loc.__getitem__ = new Sk.builtin.func(function (self, index) {
       Sk.builtin.pyCheckArgs("[]", arguments, 2, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
       var _index; // current index
@@ -348,10 +349,11 @@ var $builtinmodule = function(name) {
 
           _buffer = new Sk.builtin.list(buffer_internal);
           _shape = new Sk.builtin.tuple(Array.prototype.slice.call(
-            ndarrayJs.shape,
-            1).map(function(x) {
-            return new Sk.builtin.int_(x);
-          }));
+              ndarrayJs.shape,
+              1)
+            .map(function (x) {
+              return new Sk.builtin.int_(x);
+            }));
           return Sk.misceval.callsim(mod[CLASS_NDARRAY], _shape,
             undefined,
             _buffer);
@@ -385,7 +387,7 @@ var $builtinmodule = function(name) {
         }
         _buffer = new Sk.builtin.list(buffer_internal);
         _shape = new Sk.builtin.tuple([buffer_internal.length].map(
-          function(
+          function (
             x) {
             return new Sk.builtin.int_(x);
           }));
@@ -397,7 +399,7 @@ var $builtinmodule = function(name) {
       }
     });
 
-    $loc.__setitem__ = new Sk.builtin.func(function(self, index, value) {
+    $loc.__setitem__ = new Sk.builtin.func(function (self, index, value) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       Sk.builtin.pyCheckArgs("[]", arguments, 3, 3);
       if (index instanceof Sk.builtin.int_) {
@@ -428,20 +430,20 @@ var $builtinmodule = function(name) {
       }
     });
 
-    $loc.__len__ = new Sk.builtin.func(function(self) {
+    $loc.__len__ = new Sk.builtin.func(function (self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       return new Sk.builtin.int_(ndarrayJs.shape[0]);
     });
 
-    $loc.__iter__ = new Sk.builtin.func(function(self) {
+    $loc.__iter__ = new Sk.builtin.func(function (self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       var ret = {
-        tp$iter: function() {
+        tp$iter: function () {
           return ret;
         },
         $obj: ndarrayJs,
         $index: 0,
-        tp$iternext: function() {
+        tp$iternext: function () {
           if (ret.$index >= ret.$obj.buffer.length) return undefined;
           return ret.$obj.buffer[ret.$index++];
         }
@@ -449,13 +451,13 @@ var $builtinmodule = function(name) {
       return ret;
     });
 
-    $loc.__str__ = new Sk.builtin.func(function(self) {
+    $loc.__str__ = new Sk.builtin.func(function (self) {
       var ndarrayJs = remapToJs_shallow(self, false);
       return new Sk.builtin.str(stringify(ndarrayJs.buffer,
         ndarrayJs.shape, ndarrayJs.dtype));
     });
 
-    $loc.__repr__ = new Sk.builtin.func(function(self) {
+    $loc.__repr__ = new Sk.builtin.func(function (self) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       return new Sk.builtin.str("array(" + stringify(ndarrayJs.buffer,
         ndarrayJs.shape, ndarrayJs.dtype) + ")");
@@ -465,7 +467,7 @@ var $builtinmodule = function(name) {
       Creates left hand side operations for given binary operator
     **/
     function makeNumericBinaryOpLhs(operation) {
-      return function(self, other) {
+      return function (self, other) {
         var lhs;
         var rhs;
         var buffer; // external
@@ -478,7 +480,8 @@ var $builtinmodule = function(name) {
 
         if (Sk.abstr.typeName(other) === CLASS_NDARRAY) {
           lhs = ndarrayJs.buffer;
-          rhs = Sk.ffi.remapToJs(other).buffer;
+          rhs = Sk.ffi.remapToJs(other)
+            .buffer;
           _buffer = [];
           for (i = 0, len = lhs.length; i < len; i++) {
             //_buffer[i] = operation(lhs[i], rhs[i]);
@@ -493,7 +496,7 @@ var $builtinmodule = function(name) {
         }
 
         // create return ndarray
-        shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+        shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function (x) {
           return new Sk.builtin.int_(x);
         }));
         buffer = new Sk.builtin.list(_buffer);
@@ -503,14 +506,14 @@ var $builtinmodule = function(name) {
     }
 
     function makeNumericBinaryOpRhs(operation) {
-      return function(self, other) {
+      return function (self, other) {
         var ndarrayJs = Sk.ffi.remapToJs(self);
         var rhsBuffer = ndarrayJs.buffer;
         var _buffer = [];
         for (var i = 0, len = rhsBuffer.length; i < len; i++) {
           _buffer[i] = Sk.abstr.numberBinOp(other, rhsBuffer[i], operation);
         }
-        var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+        var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function (x) {
           return new Sk.builtin.int_(x);
         }));
         buffer = new Sk.builtin.list(_buffer);
@@ -522,12 +525,12 @@ var $builtinmodule = function(name) {
       Applies given operation on each element of the ndarray.
     */
     function makeUnaryOp(operation) {
-      return function(self) {
+      return function (self) {
         var ndarrayJs = Sk.ffi.remapToJs(self);
-        var _buffer = ndarrayJs.buffer.map(function(value) {
+        var _buffer = ndarrayJs.buffer.map(function (value) {
           return Sk.abstr.numberUnaryOp(Sk.ffi.remapToPy(value), operation);
         });
-        var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+        var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function (x) {
           return new Sk.builtin.int_(x);
         }));
         buffer = new Sk.builtin.list(_buffer);
@@ -565,13 +568,13 @@ var $builtinmodule = function(name) {
     /**
      Simple pow implementation that faciliates the pow builtin
     **/
-    $loc.__pow__ = new Sk.builtin.func(function(self, other) {
+    $loc.__pow__ = new Sk.builtin.func(function (self, other) {
       Sk.builtin.pyCheckArgs("__pow__", arguments, 2, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
-      var _buffer = ndarrayJs.buffer.map(function(value) {
+      var _buffer = ndarrayJs.buffer.map(function (value) {
         return Sk.builtin.pow(Sk.ffi.remapToPy(value), other);
       });
-      var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+      var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function (x) {
         return new Sk.builtin.int_(x);
       }));
       buffer = new Sk.builtin.list(_buffer);
@@ -603,14 +606,14 @@ var $builtinmodule = function(name) {
     if (Sk.abstr.typeName(x) === CLASS_NDARRAY) {
       var ndarrayJs = Sk.ffi.remapToJs(x);
 
-      var _buffer = ndarrayJs.buffer.map(function(value) {
+      var _buffer = ndarrayJs.buffer.map(function (value) {
         num = Sk.builtin.asnum$(value);
         res = op.call(null, num);
         return new Sk.builtin.nmber(res, Sk.builtin.nmber
           .float$);
       });
 
-      var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+      var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function (x) {
         return new Sk.builtin.int_(x);
       }));
 
@@ -627,7 +630,7 @@ var $builtinmodule = function(name) {
   }
 
   // Sine, element-wise.
-  var sin_f = function(x, out) {
+  var sin_f = function (x, out) {
     Sk.builtin.pyCheckArgs("sin", arguments, 1, 2);
     return callTrigonometricFunc(x, np.math ? np.math.sin : Math.sin);
   };
@@ -636,7 +639,7 @@ var $builtinmodule = function(name) {
   mod.sin = new Sk.builtin.func(sin_f);
 
   // Hyperbolic sine, element-wise.
-  var sinh_f = function(x, out) {
+  var sinh_f = function (x, out) {
     Sk.builtin.pyCheckArgs("sinh", arguments, 1, 2);
     if (!np.math) throw new Sk.builtin.OperationError("sinh requires mathjs");
     return callTrigonometricFunc(x, np.math.sinh);
@@ -646,7 +649,7 @@ var $builtinmodule = function(name) {
   mod.sinh = new Sk.builtin.func(sinh_f);
 
   // Inverse sine, element-wise.
-  var arcsin_f = function(x, out) {
+  var arcsin_f = function (x, out) {
     Sk.builtin.pyCheckArgs("arcsin", arguments, 1, 2);
     return callTrigonometricFunc(x, np.math ? np.math.asin : Math.asin);
   };
@@ -655,7 +658,7 @@ var $builtinmodule = function(name) {
   mod.arcsin = new Sk.builtin.func(arcsin_f);
 
   // Cosine, element-wise.
-  var cos_f = function(x, out) {
+  var cos_f = function (x, out) {
     Sk.builtin.pyCheckArgs("cos", arguments, 1, 2);
     return callTrigonometricFunc(x, np.math ? np.math.cos : Math.cos);
   };
@@ -664,7 +667,7 @@ var $builtinmodule = function(name) {
   mod.cos = new Sk.builtin.func(cos_f);
 
   // Hyperbolic cosine, element-wise.
-  var cosh_f = function(x, out) {
+  var cosh_f = function (x, out) {
     Sk.builtin.pyCheckArgs("cosh", arguments, 1, 2);
     if (!np.math) throw new Sk.builtin.OperationError("cosh requires mathjs");
     return callTrigonometricFunc(x, np.math.cosh);
@@ -674,7 +677,7 @@ var $builtinmodule = function(name) {
   mod.cosh = new Sk.builtin.func(cosh_f);
 
   // Inverse cosine, element-wise.
-  var arccos_f = function(x, out) {
+  var arccos_f = function (x, out) {
     Sk.builtin.pyCheckArgs("arccos", arguments, 1, 2);
     return callTrigonometricFunc(x, np.math ? np.math.acos : Math.acos);
   };
@@ -683,7 +686,7 @@ var $builtinmodule = function(name) {
   mod.arccos = new Sk.builtin.func(arccos_f);
 
   // Inverse tangens, element-wise.
-  var arctan_f = function(x, out) {
+  var arctan_f = function (x, out) {
     Sk.builtin.pyCheckArgs("arctan", arguments, 1, 2);
     return callTrigonometricFunc(x, np.math ? np.math.atan : Math.atan);
   };
@@ -692,7 +695,7 @@ var $builtinmodule = function(name) {
   mod.arctan = new Sk.builtin.func(arctan_f);
 
   // Tangens, element-wise.
-  var tan_f = function(x, out) {
+  var tan_f = function (x, out) {
     Sk.builtin.pyCheckArgs("tan", arguments, 1, 2);
     return callTrigonometricFunc(x, np.math ? np.math.tan : Math.tan);
   };
@@ -701,7 +704,7 @@ var $builtinmodule = function(name) {
   mod.tan = new Sk.builtin.func(tan_f);
 
   // Hyperbolic cosine, element-wise.
-  var tanh_f = function(x, out) {
+  var tanh_f = function (x, out) {
     Sk.builtin.pyCheckArgs("tanh", arguments, 1, 2);
     if (!np.math) throw new Sk.builtin.OperationError("tanh requires mathjs");
     return callTrigonometricFunc(x, np.math.tanh);
@@ -713,7 +716,7 @@ var $builtinmodule = function(name) {
   /* Simple reimplementation of the linspace function
    * http://docs.scipy.org/doc/numpy/reference/generated/numpy.linspace.html
    */
-  var linspace_f = function(start, stop, num, endpoint, retstep) {
+  var linspace_f = function (start, stop, num, endpoint, retstep) {
     Sk.builtin.pyCheckArgs("linspace", arguments, 3, 5);
     Sk.builtin.pyCheckType("start", "number", Sk.builtin.checkNumber(
       start));
@@ -755,7 +758,7 @@ var $builtinmodule = function(name) {
         } else {
           step = (stop_num - start_num) / (num_num - 1);
           samples_array = np.arange(0, num_num);
-          samples = samples_array.map(function(v) {
+          samples = samples_array.map(function (v) {
             return v * step + start_num;
           });
           samples[samples.length - 1] = stop_num;
@@ -763,7 +766,7 @@ var $builtinmodule = function(name) {
       } else {
         step = (stop_num - start_num) / num_num;
         samples_array = np.arange(0, num_num);
-        samples = samples_array.map(function(v) {
+        samples = samples_array.map(function (v) {
           return v * step + start_num;
         });
       }
@@ -797,7 +800,7 @@ var $builtinmodule = function(name) {
   /* Simple reimplementation of the arange function
    * http://docs.scipy.org/doc/numpy/reference/generated/numpy.arange.html#numpy.arange
    */
-  var arange_f = function(start, stop, step, dtype) {
+  var arange_f = function (start, stop, step, dtype) {
     Sk.builtin.pyCheckArgs("arange", arguments, 1, 4);
     Sk.builtin.pyCheckType("start", "number", Sk.builtin.checkNumber(
       start));
@@ -877,7 +880,7 @@ var $builtinmodule = function(name) {
   // https://github.com/geometryzen/davinci-dev/blob/master/src/stdlib/numpy.js
   // https://github.com/geometryzen/davinci-dev/blob/master/src/ffh.js
   // http://docs.scipy.org/doc/numpy/reference/arrays.html
-  var array_f = function(object, dtype, copy, order, subok, ndmin) {
+  var array_f = function (object, dtype, copy, order, subok, ndmin) {
     Sk.builtin.pyCheckArgs("array", arguments, 1, 6);
 
     if (object === undefined)
@@ -929,7 +932,7 @@ var $builtinmodule = function(name) {
       }
     }
 
-    var _shape = new Sk.builtin.tuple(state.shape.map(function(x) {
+    var _shape = new Sk.builtin.tuple(state.shape.map(function (x) {
       return new Sk.builtin.int_(x);
     }));
 
@@ -949,7 +952,7 @@ var $builtinmodule = function(name) {
   /**
     Return a new array of given shape and type, filled with zeros.
   **/
-  var zeros_f = function(shape, dtype, order) {
+  var zeros_f = function (shape, dtype, order) {
     Sk.builtin.pyCheckArgs("zeros", arguments, 1, 3);
     Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
     if (dtype instanceof Sk.builtin.list) {
@@ -970,7 +973,7 @@ var $builtinmodule = function(name) {
   /**
     Return a new array of given shape and type, filled with `fill_value`.
   **/
-  var full_f = function(shape, fill_value, dtype, order) {
+  var full_f = function (shape, fill_value, dtype, order) {
     Sk.builtin.pyCheckArgs("full", arguments, 2, 4);
     Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
     if (dtype instanceof Sk.builtin.list) {
@@ -1017,7 +1020,7 @@ var $builtinmodule = function(name) {
   /**
     Return a new array of given shape and type, filled with ones.
   **/
-  var ones_f = function(shape, dtype, order) {
+  var ones_f = function (shape, dtype, order) {
     Sk.builtin.pyCheckArgs("ones", arguments, 1, 3);
     Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
     if (dtype instanceof Sk.builtin.list) {
@@ -1038,7 +1041,7 @@ var $builtinmodule = function(name) {
   /**
     Dot product
   **/
-  var dot_f = function(a, b) {
+  var dot_f = function (a, b) {
     Sk.builtin.pyCheckArgs("dot", arguments, 2, 2);
 
     // ToDo: add support for ndarray args
@@ -1087,7 +1090,7 @@ var $builtinmodule = function(name) {
     res = np.math.multiply(a_matrix, b_matrix);
 
     // return ndarray
-    var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function(x) {
+    var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function (x) {
       return new Sk.builtin.int_(x);
     }));
     buffer = new Sk.builtin.list(res);
@@ -1101,23 +1104,23 @@ var $builtinmodule = function(name) {
   mod.dot = new Sk.builtin.func(dot_f);
 
   /* not implemented methods */
-  mod.ones_like = new Sk.builtin.func(function() {
+  mod.ones_like = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
       "ones_like is not yet implemented");
   });
-  mod.empty_like = new Sk.builtin.func(function() {
+  mod.empty_like = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
       "empty_like is not yet implemented");
   });
-  mod.ones_like = new Sk.builtin.func(function() {
+  mod.ones_like = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
       "ones_like is not yet implemented");
   });
-  mod.empty = new Sk.builtin.func(function() {
+  mod.empty = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
       "empty is not yet implemented");
   });
-  mod.arctan2 = new Sk.builtin.func(function() {
+  mod.arctan2 = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
       "arctan2 is not yet implemented");
   });
