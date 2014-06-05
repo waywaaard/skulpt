@@ -1,4 +1,4 @@
-76//
+//
 //
 // Turtle Graphics Module for Skulpt
 //
