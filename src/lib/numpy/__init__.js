@@ -1064,13 +1064,19 @@ var $builtinmodule = function (name) {
     var a_matrix;
 
     if (Sk.abstr.typeName(a) === CLASS_NDARRAY) {
-      a_matrix = Sk.ffi.remapToJs(a.v.buffer);
+      a_matrix = a.v.buffer;
+			a_matrix = a_matrix.map(function (x) {
+				return Sk.ffi.remapToJs(x);
+			});
     } else {
       a_matrix = Sk.ffi.remapToJs(a);
     }
 
     if (Sk.abstr.typeName(b) === CLASS_NDARRAY) {
-      b_matrix = Sk.ffi.remapToJs(b.v.buffer);
+      b_matrix = b.v.buffer;
+			b_matrix = b_matrix.map(function (x) {
+				return Sk.ffi.remapToJs(x);
+			});
     } else {
       b_matrix = Sk.ffi.remapToJs(b);
     }
@@ -1088,14 +1094,14 @@ var $builtinmodule = function (name) {
     }
 
     res = np.math.multiply(a_matrix, b_matrix);
-
+		
+		if (!Array.isArray(res)) { // if result
+			return Sk.ffi.remapToPy(res);
+		}
+		
     // return ndarray
-    var shape = new Sk.builtin.tuple(ndarrayJs.shape.map(function (x) {
-      return new Sk.builtin.int_(x);
-    }));
     buffer = new Sk.builtin.list(res);
-    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, Sk.builtin.float_,
-      buffer);
+    return Sk.misceval.callsim(mod.array, buffer, Sk.builtin.float_);
   };
   dot_f.co_varnames = ['a', 'b'];
   dot_f.$defaults = [Sk.builtin.none.none$,
