@@ -75,6 +75,7 @@ Sk.builtin.type = function(name, bases, dict)
             klass[v] = dict[v];
         }
         klass['__class__'] = klass;
+				klass['__name__'] = new Sk.builtin.str(name);
         klass.sk$klass = true;
         klass.prototype.tp$getattr = Sk.builtin.object.prototype.GenericGetAttr;
         klass.prototype.tp$setattr = Sk.builtin.object.prototype.GenericSetAttr;
