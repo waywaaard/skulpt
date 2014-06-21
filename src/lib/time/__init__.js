@@ -3,6 +3,7 @@
 
 	Implements a few of the internal time methods. However timezones are not working
   currently.
+	https://github.com/pyjs/pyjs/blob/master/pyjs/lib/time.py
 */
 
 var $builtinmodule = function (name) {
