@@ -323,6 +323,85 @@ var $builtinmodule = function (name) {
       }
     });
 
+    $loc.__getslice__ = new Sk.builtin.func( function (self, start, stop) {
+      Sk.builtin.pyCheckArgs( "[]", arguments, 3, 2 );
+      var ndarrayJs = Sk.ffi.remapToJs( self );
+      var _index; // current index
+      var _buffer; // buffer as python type
+      var buffer_internal; // buffer als js array
+      var _stride; // stride
+      var _shape; // shape as js
+      var i;
+      var _start;
+      var _stop;
+
+      if ( !Sk.builtin.checkInt( start ) && !( Sk.builtin.checkInt( stop ) || Sk.builtin.checkNone( stop ) || stop === undefined) ) {
+        // support for slices e.g. [1,4] or [0,]
+
+        _start = Sk.ffi.remapToJs(start);
+        if(stop === undefined || Sk.builtin.checkNone( stop )) {
+          _stop = ndarrayJs.buffer.length;
+        } else {
+          _stop = Sk.ffi.remapToJs(start);
+        }
+
+        if(_start < 0 || _stop < 0) {
+          throw new Sk.builtin.IndexError('Use of negative indices is not supported.');
+        }
+
+        buffer_internal = [];
+        _index = 0;
+        for ( i = _start; i < _stop; i += 1 ) {
+          buffer_internal[ _index++ ] = ndarrayJs.buffer[ i ];
+        }
+        _buffer = new Sk.builtin.list( buffer_internal );
+        _shape = new Sk.builtin.tuple( [ buffer_internal.length ].map(
+          function (x) {
+            return new Sk.builtin.int_( x );
+          } ) );
+        return Sk.misceval.callsim(mod[ CLASS_NDARRAY ], _shape, undefined,
+          _buffer );
+      } else {
+        throw new Sk.builtin.ValueError( 'Index "' + index +
+          '" must be int' );
+      }
+    } );
+
+    $loc.__setslice__ = new Sk.builtin.func( function (self, start, stop, value) {
+      Sk.builtin.pyCheckArgs( "[]", arguments, 3, 2 );
+      var ndarrayJs = Sk.ffi.remapToJs( self );
+      var _index; // current index
+      var _buffer; // buffer as python type
+      var buffer_internal; // buffer als js array
+      var _stride; // stride
+      var _shape; // shape as js
+      var i;
+      var _start;
+      var _stop;
+
+      if ( !Sk.builtin.checkInt( start ) && !( Sk.builtin.checkInt( stop ) || Sk.builtin.checkNone( stop ) || stop === undefined) ) {
+        // support for slices e.g. [1,4] or [0,]
+
+        _start = Sk.ffi.remapToJs(start);
+        if(stop === undefined || Sk.builtin.checkNone( stop )) {
+          _stop = ndarrayJs.buffer.length;
+        } else {
+          _stop = Sk.ffi.remapToJs(start);
+        }
+
+        if(_start < 0 || _stop < 0) {
+          throw new Sk.builtin.IndexError('Use of negative indices is not supported.');
+        }
+
+        for ( i = _start; i < _stop; i += 1 ) {
+          ndarrayJs.buffer[computeOffset(ndarrayJs.strides, i)] = value;
+        }
+      } else {
+        throw new Sk.builtin.ValueError( 'Index "' + index +
+          '" must be int' );
+      }
+    } );
+
     $loc.__getitem__ = new Sk.builtin.func(function (self, index) {
       Sk.builtin.pyCheckArgs("[]", arguments, 2, 2);
       var ndarrayJs = Sk.ffi.remapToJs(self);
@@ -402,7 +481,7 @@ var $builtinmodule = function (name) {
     $loc.__setitem__ = new Sk.builtin.func(function (self, index, value) {
       var ndarrayJs = Sk.ffi.remapToJs(self);
       Sk.builtin.pyCheckArgs("[]", arguments, 3, 3);
-      if (index instanceof Sk.builtin.int_) {
+      if (Sk.builtin.checkInt(index)) {
         var _offset = Sk.ffi.remapToJs(index);
         if (ndarrayJs.shape.length > 1) {
           var _value = Sk.ffi.remapToJs(value);
@@ -954,7 +1033,10 @@ var $builtinmodule = function (name) {
   **/
   var zeros_f = function (shape, dtype, order) {
     Sk.builtin.pyCheckArgs("zeros", arguments, 1, 3);
-    Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
+    if(!Sk.builtin.checkSequence(shape) && !Sk.builtin.checkInt(shape)) {
+      throw new Sk.builtin.TypeError('argument "shape" must int or sequence of ints');
+    }
+
     if (dtype instanceof Sk.builtin.list) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) +
         "' is not supported for dtype.");
@@ -975,14 +1057,25 @@ var $builtinmodule = function (name) {
   **/
   var full_f = function (shape, fill_value, dtype, order) {
     Sk.builtin.pyCheckArgs("full", arguments, 2, 4);
-    Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
+
+    if(!Sk.builtin.checkSequence(shape) && !Sk.builtin.checkInt(shape)) {
+      throw new Sk.builtin.TypeError('argument "shape" must int or sequence of ints');
+    }
+
     if (dtype instanceof Sk.builtin.list) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) +
         "' is currently not supported for dtype.");
     }
 
-    // generate an array of the dimensions for the generic array method
     var _shape = Sk.ffi.remapToJs(shape);
+    var _tup;
+    if(Sk.builtin.checkInt(shape)) {
+      _tup = new Array();
+      _tup.push(_shape);
+      _shape = _tup;
+    }
+      // generate an array of the dimensions for the generic array method
+
     var _size = prod(_shape);
     var _buffer = [];
     var _fill_value = fill_value;
@@ -1000,11 +1093,12 @@ var $builtinmodule = function (name) {
     // apply dtype casting function, if it has been provided
     if (Sk.builtin.checkClass(dtype)) {
       for (i = 0; i < _buffer.length; i++) {
-        _buffer[i] = Sk.misceval.callsim(dtype, _buffer[i]);
+        if (_buffer[i] !== Sk.builtin.none.none$) {
+          _buffer[i] = Sk.misceval.callsim(dtype, _buffer[i]);
+        }
       }
     }
-
-    return Sk.misceval.callsim(mod[CLASS_NDARRAY], shape, dtype, new Sk.builtin
+    return Sk.misceval.callsim(mod[CLASS_NDARRAY], new Sk.builtin.list(_shape), dtype, new Sk.builtin
       .list(
         _buffer));
   };
@@ -1022,7 +1116,11 @@ var $builtinmodule = function (name) {
   **/
   var ones_f = function (shape, dtype, order) {
     Sk.builtin.pyCheckArgs("ones", arguments, 1, 3);
-    Sk.builtin.pyCheckType("shape", "tuple", shape instanceof Sk.builtin.tuple);
+
+    if(!Sk.builtin.checkSequence(shape) && !Sk.builtin.checkInt(shape)) {
+      throw new Sk.builtin.TypeError('argument "shape" must int or sequence of ints');
+    }
+
     if (dtype instanceof Sk.builtin.list) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) +
         "' is not supported for dtype.");
@@ -1037,6 +1135,29 @@ var $builtinmodule = function (name) {
   ];
   mod.ones = new Sk.builtin.func(ones_f);
 
+  /**
+    Return a new array of given shape and type, filled with ones.
+  **/
+  var empty_f = function (shape, dtype, order) {
+    Sk.builtin.pyCheckArgs("empty", arguments, 1, 3);
+
+    if(!Sk.builtin.checkSequence(shape) && !Sk.builtin.checkInt(shape)) {
+      throw new Sk.builtin.TypeError('argument "shape" must int or sequence of ints');
+    }
+
+    if (dtype instanceof Sk.builtin.list) {
+      throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(dtype) +
+        "' is not supported for dtype.");
+    }
+
+    var _empty = Sk.builtin.none.none$;
+    return Sk.misceval.callsim(mod.full, shape, _empty, dtype, order);
+  };
+  empty_f.co_varnames = ['shape', 'dtype', 'order'];
+  empty_f.$defaults = [
+    new Sk.builtin.tuple([]), Sk.builtin.none.none$, new Sk.builtin.str('C')
+  ];
+  mod.empty = new Sk.builtin.func(empty_f);
 
   /**
     Dot product
@@ -1094,11 +1215,11 @@ var $builtinmodule = function (name) {
     }
 
     res = np.math.multiply(a_matrix, b_matrix);
-		
+
 		if (!Array.isArray(res)) { // if result
 			return Sk.ffi.remapToPy(res);
 		}
-		
+
     // return ndarray
     buffer = new Sk.builtin.list(res);
     return Sk.misceval.callsim(mod.array, buffer, Sk.builtin.float_);
@@ -1121,10 +1242,6 @@ var $builtinmodule = function (name) {
   mod.ones_like = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
       "ones_like is not yet implemented");
-  });
-  mod.empty = new Sk.builtin.func(function () {
-    throw new Sk.builtin.NotImplementedError(
-      "empty is not yet implemented");
   });
   mod.arctan2 = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
