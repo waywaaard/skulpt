@@ -300,7 +300,6 @@ jsplotlib.Line2D = function(xdata, ydata, linewidth, linestyle, color, marker,
     // object and draws them all, when show is called
     // this._init_common();
     var number_of_points = this._y.length || this._x.length; // implement need to move those from the original construct_graph class to lines
-
     if (!this._linestyle) {
       this._linestyle = jsplotlib.rc['lines.linestyle'];
     }
@@ -1652,6 +1651,7 @@ var $builtinmodule = function(name) {
 						throw new Sk.builtin.ValueError('args contain "' + CLASS_NDARRAY + '" without elements or malformed shape.');
 					}
 					_unpacked = _unpacked.buffer.slice(0, first_dim_size); // buffer array of first dimension
+          _unpacked = _unpacked.map(function(x) { return Sk.ffi.remapToJs(x);})
 				} else {
 					_unpacked = Sk.ffi.remapToJs(args[i]);
 				}
