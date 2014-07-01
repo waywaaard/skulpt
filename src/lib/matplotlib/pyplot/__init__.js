@@ -1,8 +1,8 @@
 /**
 	Made by Michael Ebert for skulpt, see this modules at https://github.com/waywaaard/skulpt
-	
+
 	matplotlib.pyplot inspired by https://github.com/rameshvs/jsplotlib, though heavily modified.
-	
+
   jsplotlib for supporting plot commands and kwargs for the matplotlib skulpt module
   Supports:
     - kwargs
@@ -82,6 +82,11 @@ jsplotlib.Line2D = function(xdata, ydata, linewidth, linestyle, color, marker,
   that._drawstyle = drawstyle || null;
   that._markevery = markevery || null;
   //kwargs
+
+	// if only y provided, create Array from 1 to N
+	if (!that._x || that._x.length === 0) {
+		that._x = jsplotlib.linspace(1, that._y.length, that._y.length);
+	}
 
   that.antialiased = function(a) {
     if (a)
@@ -294,7 +299,6 @@ jsplotlib.Line2D = function(xdata, ydata, linewidth, linestyle, color, marker,
     // each plot call adds a new line to our existing plot
     // object and draws them all, when show is called
     // this._init_common();
-
     var number_of_points = this._y.length || this._x.length; // implement need to move those from the original construct_graph class to lines
 
     if (!this._linestyle) {
@@ -349,11 +353,6 @@ jsplotlib.Line2D = function(xdata, ydata, linewidth, linestyle, color, marker,
 
     if (!this._alpha) {
       this._alpha = 1;
-    }
-
-    // if only y provided, create Array from 1 to N
-    if (!this._x) {
-      this.xrange(1, number_of_points, number_of_points);
     }
 
     // local storage for drawing
@@ -820,7 +819,7 @@ jsplotlib.plot = function(chart) {
 
   that.update = function(kwargs) {
     var i;
-		
+
 		// pass to lines
     for (i = 0; i < this._lines.length; i++) {
       this._lines[i].update(kwargs);
@@ -846,7 +845,7 @@ jsplotlib.plot = function(chart) {
         }
       }
     }
-		
+
     return this;
   };
 
@@ -1596,7 +1595,7 @@ var $builtinmodule = function(name) {
 	var ndarray_f = np['$d'].array.func_code;
 	var getitem_f = np['$d'][CLASS_NDARRAY]['__getitem__'].func_code;
 	var ndarray = Sk.misceval.callsim(np['$d'].array.func_code, new Sk.builtin.list([1,2,3,4]));
-	
+
   var create_chart = function() {
     /* test if Canvas ist available should be moved to create_chart function */
     if (Sk.canvas === undefined) {
@@ -1638,15 +1637,15 @@ var $builtinmodule = function(name) {
     var lines = 0;
     var xdata_not_ydata_flag = true;
 		var slice = new Sk.builtin.slice(0, undefined, 1); // getting complete first dimension of ndarray
-		
+
     for (i = 0; i < args.length; i++) {
       if (args[i] instanceof Sk.builtin.list || Sk.abstr.typeName(args[i]) === CLASS_NDARRAY) {
 				// special treatment for ndarrays, though we allow basic lists too
 				var _unpacked;
 				if(Sk.abstr.typeName(args[i]) === CLASS_NDARRAY) {
-					// we get the first dimension, no 2-dim data 
+					// we get the first dimension, no 2-dim data
 					_unpacked = Sk.ffi.unwrapn(args[i]);
-					var first_dim_size = 0; 
+					var first_dim_size = 0;
 					if(_unpacked && _unpacked.shape && _unpacked.shape[0]){
 						first_dim_size = _unpacked.shape[0];
 					} else {
@@ -1656,7 +1655,7 @@ var $builtinmodule = function(name) {
 				} else {
 					_unpacked = Sk.ffi.remapToJs(args[i]);
 				}
-				
+
         // unwraps x and y, but no 2-dim-data
         if (xdata_not_ydata_flag) {
           xdata.push(_unpacked);
@@ -1748,13 +1747,13 @@ var $builtinmodule = function(name) {
     }
 
     var label_unwrap = Sk.ffi.remapToJs(label);
-		
+
 		create_chart();
     // create new plot instance, should be replaced with Line2D and then added to the plot
     if (!plot) {
       plot = jsplotlib.plot(chart);
     }
-		
+
     if (plot && plot.title) {
       plot.title(label_unwrap);
     }
@@ -1800,13 +1799,13 @@ var $builtinmodule = function(name) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(s) +
         "' is not supported for s.");
     }
-		
+
 		create_chart();
     // create new plot instance, should be replaced with Line2D and then added to the plot
     if (!plot) {
       plot = jsplotlib.plot(chart);
     }
-		
+
     if (plot && plot.xlabel) {
       plot.xlabel(Sk.ffi.remapToJs(s));
     }
@@ -1825,13 +1824,13 @@ var $builtinmodule = function(name) {
       throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(s) +
         "' is not supported for s.");
     }
-		
+
 		create_chart();
     // create new plot instance, should be replaced with Line2D and then added to the plot
     if (!plot) {
       plot = jsplotlib.plot(chart);
     }
-		
+
     if (plot && plot.ylabel) {
       plot.ylabel(Sk.ffi.remapToJs(s));
     }
@@ -1848,7 +1847,7 @@ var $builtinmodule = function(name) {
     // clear all
     chart = null;
     plot = null;
-				
+
     if (Sk.canvas !== undefined) {
       $('#' + Sk.canvas).empty();
     }
