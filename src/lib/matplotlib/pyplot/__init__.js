@@ -300,13 +300,15 @@ jsplotlib.Line2D = function(xdata, ydata, linewidth, linestyle, color, marker,
     // object and draws them all, when show is called
     // this._init_common();
     var number_of_points = this._y.length || this._x.length; // implement need to move those from the original construct_graph class to lines
-    if (!this._linestyle) {
+    if (!this._linestyle && !this._marker) {
       this._linestyle = jsplotlib.rc['lines.linestyle'];
     }
 
-    if (!this._marker) {
+    /*
+    if (!this._marker && !this._linestyle) {
       this._marker = jsplotlib.rc['lines.marker'];
     }
+    */
 
     if (!this._color) {
       this._color = jsplotlib.color_to_hex(parent_chart.get_next_color());
