@@ -243,7 +243,7 @@ arduino.uno.prototype.setStatus = function (status) {
 **/
 arduino.uno.prototype._getPinValue = function (pin) {
   // is there a leading pin?
-  if (typeof pin === 'string' &&  pin.indexOf('pin') === 0) {
+  if (typeof pin === 'string' && pin.indexOf('pin') === 0) {
     pin = pin.replace(/pin/g, '');
   }
 
@@ -257,7 +257,7 @@ arduino.uno.prototype._getPinValue = function (pin) {
 };
 
 arduino.uno.prototype.digitalRead = function (pin) {
-	return this._getPinValue(pin);
+  return this._getPinValue(pin);
 };
 
 /**
@@ -492,10 +492,29 @@ var $builtinmodule = function (name) {
       visibility = "visible";
     }
 
+    // helper functions that fixes IE svg classList issues
+    function getClassList(element) {
+      if (typeof nodes[i].classList === 'undefined') {
+        var arr = (element.className instanceof SVGAnimatedString ? element.className
+          .baseVal : element.className)
+          .split(/\s+/);
+        if ('' === arr[0]) {
+          arr.pop();
+        }
+        return arr;
+      } else {
+        return element.classList;
+      }
+    }
+
     var i;
+    var classlist;
     for (i = 0; i < nodes.length; i++) {
-      if (nodes[i].classList.length === 1) // leds have exactly 2 classes
+      // fix for IE that does not have and classList attribute on svg elements
+      classlist = getClassList(nodes[i]);
+      if (classlist.length === 1) {
         nodes[i].setAttribute("visibility", visibility);
+      }
     }
   }
 
@@ -625,15 +644,22 @@ var $builtinmodule = function (name) {
 
     $loc.loop = new Sk.builtin.func(function (self, func, delay) {
       var _delay = 1000;
-      var _func;
 
       if (delay) {
         _delay = Sk.ffi.remapToJs(delay);
       }
+      debugger;
+      console.log(func);
 
       timeoutID.push(window.setInterval(function () {
         Sk.misceval.callsim(func);
       }, _delay));
+    });
+
+    $loc.delay = new Sk.builtin.func(function (self, delay) {
+      // dummy function
+      var _delay = Sk.ffi.remapToJs(delay);
+
     });
 
     function write_ledmatrix(io, pin) {
