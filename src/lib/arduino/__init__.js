@@ -46,6 +46,7 @@ arduino.uno = function (resetID, onID, lID, txID) {
   this.int0 = undefined; // digital pin 2
   this.int1 = undefined; // digital pin 3
   this.interrupts = true;
+  this.port = undefined;
 
   // setup io map
   this.io = {};
@@ -397,7 +398,7 @@ arduino.uno.prototype.digitalWrite = function (pin, value) {
     if (old_value !== io.value) {
       var i;
       for (i = 0; i < this.actions.onChange.length; i++) {
-        this.actions.onChange[i].call(undefined, io, pin);
+        this.actions.onChange[i].call(undefined, io, pin, this.port);
       }
     }
   }
@@ -453,6 +454,21 @@ arduino.uno.prototype.externalDigitalWrite = function (pin, value) {
   }
 };
 
+// helper functions that fixes IE svg classList issues
+arduino.getClassList = function (element) {
+  if (typeof element.classList === 'undefined') {
+    var arr = (element.className instanceof SVGAnimatedString ? element.className
+      .baseVal : element.className)
+      .split(/\s+/);
+    if ('' === arr[0]) {
+      arr.pop();
+    }
+    return arr;
+  } else {
+    return element.classList;
+  }
+};
+
 /* end of arduino api */
 
 var $builtinmodule = function (name) {
@@ -472,14 +488,16 @@ var $builtinmodule = function (name) {
 
   var timeoutID = []; // collection of timeoutIDs
 
-  function write_callback(io, pin) {
+  function write_callback(io, pin, port) {
     var nodes;
+    var selctorQuery = '#' + port + ' .' + (pin.name ? pin.name : ("pin" + pin));
 
-    if (pin.name) {
-      nodes = document.getElementsByClassName(pin.name);
-    } else {
-      nodes = document.getElementsByClassName("pin" + pin); // nodes have "pin[0-9]"as classnames
-    }
+    //if (pin.name) {
+    //  nodes = document.getElementsByClassName(pin.name);
+    //} else {
+    //  nodes = document.getElementsByClassName("pin" + pin); // nodes have "pin[0-9]"as classnames
+    //}
+    nodes = document.querySelectorAll(selctorQuery);
 
     if (!nodes || nodes.length <= 0) {
       console.log("Specified pin is not connected: " + pin.name);
@@ -492,26 +510,11 @@ var $builtinmodule = function (name) {
       visibility = "visible";
     }
 
-    // helper functions that fixes IE svg classList issues
-    function getClassList(element) {
-      if (typeof nodes[i].classList === 'undefined') {
-        var arr = (element.className instanceof SVGAnimatedString ? element.className
-          .baseVal : element.className)
-          .split(/\s+/);
-        if ('' === arr[0]) {
-          arr.pop();
-        }
-        return arr;
-      } else {
-        return element.classList;
-      }
-    }
-
     var i;
     var classlist;
     for (i = 0; i < nodes.length; i++) {
       // fix for IE that does not have and classList attribute on svg elements
-      classlist = getClassList(nodes[i]);
+      classlist = arduino.getClassList(nodes[i]);
       if (classlist.length === 1) {
         nodes[i].setAttribute("visibility", visibility);
       }
@@ -538,17 +541,24 @@ var $builtinmodule = function (name) {
 
   var arduino_f = function ($gbl, $loc) {
     var init_f = function (self, baud, port, timeout, sr) {
-
+      Sk.builtin.pyCheckArgs('__init__', arguments, 3, 5);
       // ignore the actual arguments, due to the fact that we do not establish
       // a real connection to an hardware device
-
+      var _port = Sk.ffi.remapToJs(port);
+      var _reset = Sk.ffi.remapToJs(mod.arduino_reset) + "_" + _port;
+      var _on = Sk.ffi.remapToJs(mod.arduino_on) + "_" + _port;
       var arduinoJS = {};
-      arduinoJS.board = new arduino.uno(Sk.ffi.remapToJs(mod.arduino_reset),
-        Sk.ffi.remapToJs(mod.arduino_on));
+
+      arduinoJS.board = new arduino.uno(_reset, _on);
+      arduinoJS.board.port = _port;
 
       self.v = arduinoJS;
 
       // we store the arduino instance in the Sk-space for external access
+      if(Sk.arduino) {
+        // reset previous arduino instance and proceed
+        resetAll();
+      }
       Sk.arduino = self.v;
 
       self.tp$name = CLASS_ARDUINO; // set class name
@@ -648,8 +658,6 @@ var $builtinmodule = function (name) {
       if (delay) {
         _delay = Sk.ffi.remapToJs(delay);
       }
-      debugger;
-      console.log(func);
 
       timeoutID.push(window.setInterval(function () {
         Sk.misceval.callsim(func);
@@ -674,8 +682,8 @@ var $builtinmodule = function (name) {
         | | | | | | |
         -------------
     */
-
-      if (isNaN(pin) || pin < 0 || pin > 19 || cols.indexOf(pin) === -1) {
+      debugger;
+      if (isNaN(pin) || pin < 0 || pin > 19 ) {//|| cols.indexOf(pin) === -1) {
         return;
       }
 
@@ -698,10 +706,10 @@ var $builtinmodule = function (name) {
       for (i = 0; i < nodes.length; i++) {
         // 1. get other pin index for specified
         fill = '#fafafa';
-        var siblings = Array.prototype.filter.call(nodes[i].classList,
+        var siblings = Array.prototype.filter.call(arduino.getClassList(nodes[i]),
           classname_map);
         if (siblings.length > 0) {
-          sibling_value = myuno._getPinValue(siblings[0]);
+          sibling_value = Sk.arduino.board._getPinValue(siblings[0]);
           // HIGH value on col and HIGH on row
           if (io.value === arduino.HIGH && sibling_value === arduino.HIGH) {
             fill = 'lime';
@@ -711,7 +719,7 @@ var $builtinmodule = function (name) {
       }
     }
     mod.ledMatrix = new Sk.builtin.func(function (arduino) {
-      if (!arduino || arduino.v || arduino.v.board) {
+      if (Sk.abstr.typeName(arduino) !== CLASS_ARDUINO) {
         throw new Sk.builtin.ValueError('ledMatrix needs arduino object');
       }
 
