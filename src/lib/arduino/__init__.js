@@ -22,16 +22,28 @@ arduino.Timer1 = {
 
 arduino.Timer1.initialize = function (period) {
   arduino.Timer1.period = period;
+  if (!Sk.arduino.timer) {
+    Sk.arduino.timer = [];
+  }
 };
 
 arduino.Timer1.attachInterrupt = function (func) {
   arduino.Timer1.func = func;
+  arduino.Timer1.detachInterrupt();
 
-  arduino.Timer1.id = window.setInterval(func, arduino.Timer1.period);
+  Sk.arduino.timer.push(window.setInterval(func, arduino.Timer1.period));
 };
 
 arduino.Timer1.detachInterrupt = function () {
-  window.clearTimeout(arduino.Timer1.id);
+  var i;
+  if (!Sk.arduino || !Sk.arduino.timer) {
+    return; // nothing to do here
+  }
+
+  for (i = 0; i < Sk.arduino.timer.length; i++) {
+    window.clearInterval(Sk.arduino.timer[i]);
+  }
+  Sk.arduino.timer = [];
 };
 
 // constructor
@@ -492,11 +504,6 @@ var $builtinmodule = function (name) {
     var nodes;
     var selctorQuery = '#' + port + ' .' + (pin.name ? pin.name : ("pin" + pin));
 
-    //if (pin.name) {
-    //  nodes = document.getElementsByClassName(pin.name);
-    //} else {
-    //  nodes = document.getElementsByClassName("pin" + pin); // nodes have "pin[0-9]"as classnames
-    //}
     nodes = document.querySelectorAll(selctorQuery);
 
     if (!nodes || nodes.length <= 0) {
@@ -522,22 +529,61 @@ var $builtinmodule = function (name) {
   }
 
   function resetAll() {
-    reset = true;
     var i;
     for (i = 0; i < timeoutID.length; i++) {
       window.clearTimeout(timeoutID[i]);
     }
     timeoutID = [];
 
+    arduino.Timer1.detachInterrupt();
+
     for (i = 0; i <= 13; i++) {
       Sk.arduino.board.digitalWrite(i, arduino.LOW);
     }
 
     Sk.arduino.board.setStatus(arduino.OFF);
-    reset = false;
   }
 
   var CLASS_ARDUINO = 'Arduino';
+  var CLASS_TIMER = "Timer1";
+
+  var timer_f = function ($gbl, $loc) {
+    var init_f = function (self, timeout) {
+      Sk.builtin.pyCheckArgs('__init__', arguments, 2, 2);
+      if (!Sk.builtin.checkNumber(timeout)) {
+        throw new Sk.builtin.TypeError(
+          'argument timeout must be a numeric type');
+      }
+
+      var _timeout = Sk.ffi.remapToJs(timeout);
+
+      // detach previous interrupt
+      arduino.Timer1.detachInterrupt();
+
+      // now set new period
+      arduino.Timer1.initialize(_timeout);
+    };
+    $loc.__init__ = new Sk.builtin.func(init_f);
+
+    var attach_f = function (self, func) {
+      Sk.builtin.pyCheckArgs('attachInterrupt', arguments, 2, 2);
+      debugger;
+      if (!Sk.builtin.checkFunction(func)) {
+        throw new Sk.builtin.TypeError('func must be a function type');
+      }
+
+      // go, attaches interrupt and sets interval
+      var callback = function () {
+        Sk.misceval.callsim(func);
+      }
+      arduino.Timer1.attachInterrupt(callback);
+    };
+    $loc.attachInterrupt = new Sk.builtin.func(attach_f);
+  };
+
+  mod[CLASS_TIMER] = Sk.misceval.buildClass(mod, timer_f,
+    CLASS_TIMER, []);
+
 
   var arduino_f = function ($gbl, $loc) {
     var init_f = function (self, baud, port, timeout, sr) {
@@ -555,7 +601,7 @@ var $builtinmodule = function (name) {
       self.v = arduinoJS;
 
       // we store the arduino instance in the Sk-space for external access
-      if(Sk.arduino) {
+      if (Sk.arduino) {
         // reset previous arduino instance and proceed
         resetAll();
       }
@@ -683,7 +729,7 @@ var $builtinmodule = function (name) {
         -------------
     */
       debugger;
-      if (isNaN(pin) || pin < 0 || pin > 19 ) {//|| cols.indexOf(pin) === -1) {
+      if (isNaN(pin) || pin < 0 || pin > 19) { //|| cols.indexOf(pin) === -1) {
         return;
       }
 
