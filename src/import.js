@@ -1,3 +1,10 @@
+/*
+
+Could we separate numpy, matplotlib, and others out from skulpt
+and load them through the external libraries mechanism?
+
+*/
+
 // this is stored into sys specially, rather than created by sys
 Sk.sysmodules = new Sk.builtin.dict([]);
 Sk.realsyspath = undefined;
