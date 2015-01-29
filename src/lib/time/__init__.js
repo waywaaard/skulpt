@@ -1,5 +1,8 @@
 /*
-	Barebones implementation of the Python time package.
+ Barebones implementation of the Python time package.
+
+ For now, only the time() function is implemented.
+ */
 
 	Implements a few of the internal time methods. However timezones are not working
   currently.
@@ -216,8 +219,7 @@ var $builtinmodule = function (name) {
       repr += ")";
 
       return new Sk.builtin.str(repr);
-    });
-  };
+    }
 
   mod[CLASS_TIME_STRUCT] = Sk.misceval.buildClass(mod, struct_time_f, CLASS_TIME_STRUCT, []);
 
@@ -409,23 +411,20 @@ var $builtinmodule = function (name) {
   };
   mod.localtime = new Sk.builtin.func(localtime_f);
 
-  mod.sleep = new Sk.builtin.func(function (secs) {
-    Sk.builtin.pyCheckArgs("sleep", arguments, 1, 1);
-    if (!Sk.builtin.checkNumber(secs)) {
-      throw new TypeError('a float is required');
-    }
-
-    var _secs = Sk.ffi.remapToJs(secs);
-
-    if(_secs < 0) {
-      throw new Sk.builtin.ValueError('sleep length must be non-negative');
-    }
-
-    var delay = _secs * 1000;
-    var start = new Date().getTime();
-    while (new Date().getTime() < start + delay);
-
-  });
+    // This is an experimental implementation of time.sleep(), using suspensions
+    mod.sleep = new Sk.builtin.func(function(delay) {
+        var susp = new Sk.misceval.Suspension();
+        susp.resume = function() { return Sk.builtin.none.none$; }
+        susp.data = {type: "Sk.promise", promise: new Promise(function(resolve) {
+            if (typeof setTimeout === "undefined") {
+                // We can't sleep (eg test environment), so resume immediately
+                resolve();
+            } else {
+                setTimeout(resolve, Sk.ffi.remapToJs(delay)*1000);
+            }
+        })};
+        return susp;
+    });
 
   mod.accept2dyear = new Sk.builtin.bool(true);
 
