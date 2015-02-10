@@ -1,10 +1,6 @@
 /*
- Barebones implementation of the Python time package.
-
- For now, only the time() function is implemented.
- */
-
-	Implements a few of the internal time methods. However timezones are not working
+  Barebones implementation of the Python time package.
+  Implements a few of the internal time methods. However timezones are not working
   currently.
 	https://github.com/pyjs/pyjs/blob/master/pyjs/lib/time.py
 */
@@ -24,6 +20,15 @@ var $builtinmodule = function (name) {
   wday_name[5] = "Fri";
   wday_name[6] = "Sat";
 
+  var wday_fullname = [];
+  wday_fullname[0] = "Sunday";
+  wday_fullname[1] = "Monday";
+  wday_fullname[2] = "Tuesday";
+  wday_fullname[3] = "Wednesday";
+  wday_fullname[4] = "Thursday";
+  wday_fullname[5] = "Friday";
+  wday_fullname[6] = "Saturday";
+
   var mon_name = [];
   mon_name[0] = "Jan";
   mon_name[1] = "Feb";
@@ -38,12 +43,53 @@ var $builtinmodule = function (name) {
   mon_name[10] = "Nov";
   mon_name[11] = "Dec";
 
+  var mon_fullname = [];
+  mon_name[0] = "January";
+  mon_name[1] = "February";
+  mon_name[2] = "March";
+  mon_name[3] = "April";
+  mon_name[4] = "May";
+  mon_name[5] = "June";
+  mon_name[6] = "July";
+  mon_name[7] = "August";
+  mon_name[8] = "September";
+  mon_name[9] = "October";
+  mon_name[10] = "November";
+  mon_name[11] = "December";
+
   /**
     Pads the given string (str) with given length (l) and character (c) on the left
   **/
   function padleft(str, l, c) {
     var _str = str.toString();
     return Array(l - _str.length + 1).join(c || " ") + _str;
+  }
+
+  function getweekoftheyear(date, dowOffset) {
+    /*getWeek() was developed by Nick Baicoianu at MeanFreePath: http://www.epoch-calendar.com */
+    // modified by waywaaard
+    dowOffset = (typeof dowOffset) == "number" ? dowOffset : 0; //default dowOffset to zero
+    var newYear = new Date(date.getFullYear(),0,1);
+    var day = newYear.getDay() - dowOffset; //the day of week the year begins on
+    day = (day >= 0 ? day : day + 7);
+    var daynum = Math.floor((date.getTime() - newYear.getTime() - (date.getTimezoneOffset()-newYear.getTimezoneOffset())*60000)/86400000) + 1;
+    var weeknum;
+    //if the year starts before the middle of a week
+    if(day < 4) {
+      weeknum = Math.floor((daynum+day-1)/7) + 1;
+      if(weeknum > 52) {
+        var nYear = new Date(date.getFullYear() + 1,0,1);
+        var nday = nYear.getDay() - dowOffset;
+        nday = nday >= 0 ? nday : nday + 7;
+        /*if the next year starts before the middle of
+          the week, it is week #1 of that year*/
+        weeknum = nday < 4 ? 1 : 53;
+      }
+    }
+    else {
+      weeknum = Math.floor((daynum+day-1)/7);
+    }
+    return weeknum;
   }
 
   /**
@@ -116,7 +162,7 @@ var $builtinmodule = function (name) {
     tm.tm_mon--;
     tm.tm_wday = (tm.tm_wday+1) % 7;
     tm.tm_yday--;
-    // not support for TM_ZONE currently
+    // no support for TM_ZONE currently
     tm.tm_gmtoff = 0;
   }
 
@@ -177,7 +223,7 @@ var $builtinmodule = function (name) {
       }
 
       if(!Sk.builtin.checkSequence(sequence) || !(sequence instanceof Sk.builtin.tuple)) {
-        throw new Sk.builtin.TypeError('constructor requires a sequence');
+        throw new Sk.builtin.TypeError("constructor requires a sequence");
       }
 
       var _seq = Sk.ffi.remapToJs(sequence);
@@ -219,7 +265,8 @@ var $builtinmodule = function (name) {
       repr += ")";
 
       return new Sk.builtin.str(repr);
-    }
+    });
+  };
 
   mod[CLASS_TIME_STRUCT] = Sk.misceval.buildClass(mod, struct_time_f, CLASS_TIME_STRUCT, []);
 
@@ -361,7 +408,7 @@ var $builtinmodule = function (name) {
   // ToDo: time.gmtime(1), should return: time.struct_time(tm_year=1970, tm_mon=1, tm_mday=1, tm_hour=0, tm_min=0, tm_sec=1, tm_wday=3, tm_yday=1, tm_isdst=0)
   var gmtime_f = function(secs) {
     if(secs && !Sk.builtin.checkNumber(secs) && !Sk.builtin.checkNone(secs)) {
-      throw new Sk.builtin.TypeError('an integer is required (got type ' + Sk.abstr.typeName(secs) + ')');
+      throw new Sk.builtin.TypeError("an integer is required (got type " + Sk.abstr.typeName(secs) + ")");
     }
 
     var _date;
@@ -393,7 +440,7 @@ var $builtinmodule = function (name) {
 
   var localtime_f = function(secs) {
     if(secs && !Sk.builtin.checkNumber(secs) && !Sk.builtin.checkNone(secs)) {
-      throw new Sk.builtin.TypeError('an integer is required (got type ' + Sk.abstr.typeName(secs) + ')');
+      throw new Sk.builtin.TypeError("an integer is required (got type " + Sk.abstr.typeName(secs) + ")");
     }
 
     var _date;
@@ -414,7 +461,7 @@ var $builtinmodule = function (name) {
     // This is an experimental implementation of time.sleep(), using suspensions
     mod.sleep = new Sk.builtin.func(function(delay) {
         var susp = new Sk.misceval.Suspension();
-        susp.resume = function() { return Sk.builtin.none.none$; }
+        susp.resume = function() { return Sk.builtin.none.none$; };
         susp.data = {type: "Sk.promise", promise: new Promise(function(resolve) {
             if (typeof setTimeout === "undefined") {
                 // We can't sleep (eg test environment), so resume immediately
@@ -439,24 +486,141 @@ var $builtinmodule = function (name) {
       "tzname is not yet implemented");
   });
 
-  mod.timezone = new Sk.builtin.func(function () {
-    throw new Sk.builtin.NotImplementedError(
-      "timezone is not yet implemented");
-  });
+  mod.timezone = new Sk.builtin.nmber(new Date().getTimezoneOffset(), Sk.builtin.nmber.float$);
 
   mod.strptime = new Sk.builtin.func(function () {
     throw new Sk.builtin.NotImplementedError(
       "strptime is not yet implemented");
   });
 
-  mod.strftime = new Sk.builtin.func(function () {
-    throw new Sk.builtin.NotImplementedError(
-      "strftime is not yet implemented");
+  // https://docs.python.org/2/library/time.html#time.strftime
+  mod.strftime = new Sk.builtin.func(function (format, t) {
+    var _tup;
+    var _buf = {};
+
+    if(t && (Sk.builtin.checkSequence(t) || (t instanceof Sk.builtin.tuple))) { // t is tuple or seq
+      _tup = t;
+    }
+
+    if(t && Sk.abstr.typeName(t) === CLASS_TIME_STRUCT) {
+      //_tup = Sk.ffi.remapToJs(tmtotuple(t.v)); // manuel unwrap :(
+      _buf = t; // avoid double remap and object creation, just pass time_struct to checktm
+    } else {
+      // check basically for None
+      if(!_tup) {
+        _tup = datetoarray(new Date()).map(function(x){return Sk.ffi.remapToPy(x);});
+        _tup = new Sk.builtin.tuple(_tup);
+      }
+
+      _buf = Sk.misceval.callsim(mod[CLASS_TIME_STRUCT], _tup); // creates tm
+    }
+
+    // check if _buf has valid ranges
+    checktm(_buf);
+
+    /*
+      Convert a tuple or struct_time representing a time as returned by gmtime() or localtime() to a string as specified by the format argument. If t is not provided, the current time as returned by localtime() is used. format must be a string. ValueError is raised if any field in t is outside of the allowed range. strftime() returns a locale depedent byte string; the result may be converted to unicode by doing strftime(<myformat>).decode(locale.getlocale()[1])
+
+    // general approach is to use a regex that matches the format above, and
+    // do an re.sub with a function as replacement to make the subs.
+    */
+    // if t == None
+    // tm = localtime
+
+    var _fmstr;
+
+    var _regex_dict = {
+      "%a": function(buf){return wday_name[buf.v.tm_wday];},
+      "%A": function(buf){return wday_fullname[buf.v.tm_wday];},
+      "%b": function(buf){return mon_name[buf.v.tm_mon];},
+      "%B": function(buf){return mon_fullname[buf.v.tm_mon];},
+      "%c": function(buf){
+            var date = new Date(buf.v.tm_year, buf.v.tm_mon, buf.v.tm_mday, buf.v.tm_hour, buf.v.min, buf.v.sec);
+            return date.toLocaleString();
+          },
+      "%d": function(buf){return buf.v.tm_mday;},
+      "%H": function(buf){return buf.v.tm_hour;},
+      "%I": function(buf){return (buf.v.tm_hour % 12) + 1;},
+      "%j": function(buf){return buf.v.tm_yday;},
+      "%m": function(buf){return buf.v.tm_mon;},
+      "%M": function(buf){return buf.v.tm_min;},
+      "%p": function(buf){return buf.v.tm_hour >= 12 ? "PM" : "AM";},
+      "%S": function(buf){return buf.v.tm_sec;},
+      "%U": function(buf){
+            // Week of the year with week starting on sundays
+            var date = new Date(buf.v.tm_year, buf.v.tm_mon, buf.v.tm_mday);
+            return getweekoftheyear(date, 0);
+          },
+      "%w": function(buf){return buf.v.tm_wday;},
+      "%W": function(buf){
+            // Week of the year with week starting on mondays
+            var date = new Date(buf.v.tm_year, buf.v.tm_mon, buf.v.tm_mday);
+            return getweekoftheyear(date, 1);
+          },
+      "%x": function(buf){
+            var date = new Date(buf.v.tm_year, buf.v.tm_mon, buf.v.tm_mday, buf.v.tm_hour, buf.v.min, buf.v.sec);
+            return date.toLocaleDateString();
+          },
+      "%X": function(buf){
+            var date = new Date(buf.v.tm_year, buf.v.tm_mon, buf.v.tm_mday, buf.v.tm_hour, buf.v.min, buf.v.sec);
+            return date.toLocaleTimeString();
+          },
+      "%y": function(buf){return buf.v.tm_year.toString().slice(-2);},
+      "%Y": function(buf){return buf.v.tm_year;},
+      "%Z": function(buf){/* time zone */},
+      "%%": function(buf){return "%";}
+    };
+
+  /*
+      switch(directive) {
+        case 'a': // Locale’s abbreviated weekday name.
+        case 'A': // Locale’s full weekday name.
+        case 'b': // Locale’s abbreviated month name.
+        case 'B': // Locale’s full month name.
+        case 'c': // Locale’s appropriate date and time representation.
+        case 'd': // Day of the month as a decimal number [01,31].
+        case 'H': // Hour (24-hour clock) as a decimal number [00,23].
+        case 'I': // Hour (12-hour clock) as a decimal number [01,12].
+        case 'j': // Day of the year as a decimal number [001,366].
+        case 'm': // Month as a decimal number [01,12].
+        case 'M': // Minute as a decimal number [00,59].
+        case 'p': // Locale’s equivalent of either AM or PM.
+        case 'S': // Second as a decimal number [00,61].
+        case 'U': // Week number of the year (Sunday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Sunday are considered to be in week 0.
+        case 'w': // Weekday as a decimal number [0(Sunday),6].
+        case 'W': // Week number of the year (Monday as the first day of the week) as a decimal number [00,53]. All days in a new year preceding the first Monday are considered to be in week 0.
+        case 'x': // Locale’s appropriate date representation.
+        case 'X': // Locale’s appropriate time representation.
+        case 'y': // Year without century as a decimal number [00,99].
+        case 'Y': // Year with century as a decimal number.
+        case 'Z': // Time zone name (no characters if no time zone exists).
+        case '%': // A literal '%' character.
+        default:
+         // raise ValueError?
+
+      }
+  */
+    return new Sk.builtin.str(_fmstr);
   });
 
+  /**
+    On Unix, return the current processor time as a floating point number expressed in seconds. The precision, and in fact the very definition of the meaning of “processor time”, depends on that of the C function of the same name, but in any case, this is the function to use for benchmarking Python or timing algorithms
+  */
   mod.clock = new Sk.builtin.func(function () {
-    throw new Sk.builtin.NotImplementedError(
-      "clock is not yet implemented");
+    // use shim and do not override any window objects
+    var perf = window.performance || {};
+    perf.now = (function() {
+      return window.performance.now       ||
+             window.performance.mozNow    ||
+             window.performance.msNow     ||
+             window.performance.oNow      ||
+             window.performance.webkitNow ||
+             function() { return new Date().getTime(); };
+    })();
+
+    var t = perf.now();
+    var flt = new Sk.builtin.nmber(t, Sk.builtin.nmber.float$);
+    return flt;
   });
 
   mod.daylight = new Sk.builtin.func(function () {
