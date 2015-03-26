@@ -2200,5 +2200,5 @@ function generateTurtleModule(_target) {
         Turtle   : Turtle,
         Screen   : Screen
     };
-};
+}
 };

@@ -1052,6 +1052,54 @@ Sk.builtin.quit = function quit (msg) {
     throw new Sk.builtin.SystemExit(s);
 };
 
+Sk.builtin.issubclass = function issubclass(c1, c2) {
+    Sk.builtin.pyCheckArgs("issubclass", arguments, 2, 2);
+    if (!Sk.builtin.checkClass(c2) && !(c2 instanceof Sk.builtin.tuple)) {
+        throw new Sk.builtin.TypeError("issubclass() arg 2 must be a classinfo, type, or tuple of classes and types");
+    }
+
+    if (c2 === Sk.builtin.int_.prototype.ob$type) {
+        return true;
+    }
+
+    if (c2 === Sk.builtin.float_.prototype.ob$type) {
+        return true;
+    }
+
+    if (c2 === Sk.builtin.none.prototype.ob$type) {
+        return true;
+    }
+
+    // Normal case
+    if (c1.ob$type === c2) return true;
+
+    var issubclass_internal = function(klass, base)
+    {
+        if (klass === base) return true;
+        if (klass["$d"] === undefined) return false;
+        var bases = klass["$d"].mp$subscript(Sk.builtin.type.basesStr_);
+        for (var i = 0; i < bases.v.length; ++i)
+        {
+            if (issubclass_internal(bases.v[i], base))
+                return true;
+        }
+        return false;
+    };
+
+    // Handle tuple type argument
+    if (c2 instanceof Sk.builtin.tuple)
+    {
+        for (var i = 0; i < c2.v.length; ++i)
+        {
+            if (Sk.builtin.issubclass(c1, c2.v[i]))
+                return true;
+        }
+        return false;
+    }
+
+    return issubclass_internal(c1, c2);
+};
+
 Sk.builtin.sorted = function sorted (iterable, cmp, key, reverse) {
     var arr;
     var next;
@@ -1063,8 +1111,7 @@ Sk.builtin.sorted = function sorted (iterable, cmp, key, reverse) {
             compare_func = function (a, b) {
                 return Sk.misceval.richCompareBool(a[0], b[0], "Lt") ? new Sk.builtin.nmber(-1, Sk.builtin.nmber.int$) : new Sk.builtin.nmber(0, Sk.builtin.nmber.int$);
             };
-        }
-        else {
+        } else {
             compare_func = function (a, b) {
                 return Sk.misceval.callsim(cmp, a[0], b[0]);
             };
@@ -1077,8 +1124,7 @@ Sk.builtin.sorted = function sorted (iterable, cmp, key, reverse) {
             next = iter.tp$iternext();
         }
         list = new Sk.builtin.list(arr);
-    }
-    else {
+    } else {
         if (!(cmp instanceof Sk.builtin.none) && cmp !== undefined) {
             compare_func = cmp;
         }

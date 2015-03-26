@@ -1,3 +1,176 @@
+#This fork adds:
+
+## Python specific
+- [x] __issubclass__ builtin
+- [x] __name__ attribute on classes/types
+
+## numpy:
+- [x] ndarray (working, missing functions)
+- [x] linspace
+- [x] array 
+- [x] ones
+- [x] zeros
+- [x] arange
+- [x] asarray that maps to array (no real functionality, though not needed on a python-js-interpreter)
+
+### ndarray specific
+- [x] ToDo
+
+Some of the trigonmetric functions aswell ```dot``` requires https://github.com/josdejong/mathjs to work.
+However most functions have a fallback, otherwise an OperationError will be thrown
+
+See following test code for examples:
+```python
+import numpy as np
+
+a = [[1, 2], [3, 4]]
+
+b = np.array(a, ndmin=3, dtype=float)
+print "np.array(a, ndmin=3a, dtype=float)"
+
+c = np.ones(b.shape)
+print "np.ones(b.shape): %s" % (c,)
+d = np.zeros(b.shape)
+print "np.zeros(b.shape): %s" % (d,)
+print "__str__: %s" % b
+print "__repr__: %r" % b
+print "__len__: %s" % len(b)
+print "shape %s" % (b.shape,)
+print "ndim %s" % b.ndmin
+print "data: %s"  % (b.data,)
+print "dtype: %s" % b.dtype
+print "size %s" % b.size
+print "b.tolist %s" % (b.tolist(),)
+b.fill(9)
+print "b.fill(9): %s" % (b,)
+b[0, 0, 0] = 2
+print "b[0, 0, 0] = 2: %s" % (b,)
+
+print ""
+print "np.full((2,2), 2.0)"
+c = np.full((2,2), 2.0, int)
+
+print "===================="
+print "     operations"
+print "===================="
+print "c = %s" % (c,)
+print "c + 2 = %s" % (c + 2,)
+print "c - 2 = %s" % (c - 2,)
+print "c * 2 = %s" % (c * 2,)
+print "c / 2 = %s" % (c / 2,)
+print "c ** 2 = %s" % (c ** 2,)
+print "+c = %s" % (+c,)
+print "-c = %s" % (-c,)
+
+print "===================="
+print "   trigonometric    "
+print "===================="
+c = np.full((2,2), 0, int)
+print "c = %s" % (c,)
+print "np.sin(c) = %s" % (np.sin(c),)
+print "np.cos(c) = %s" % (np.cos(c),)
+print "np.tan(c) = %s" % (np.tan(c),)
+print "np.arcsin(c) = %s" % (np.arcsin(c),)
+print "np.arccos(c) = %s" % (np.arccos(c),)
+print "np.arctan(c) = %s" % (np.arctan(c),)
+print "np.sinh(c) = %s" % (np.sinh(c),)
+print "np.cosh(c) = %s" % (np.cosh(c),)
+print "np.tanh(c) = %s" % (np.tanh(c),)
+print "np.sin([0,1]) = %s" % (np.sin([0,1]),)
+print "np.sin((0,1)) = %s" % (np.sin((0,1)),)
+
+print "===================="
+print "      various       "
+print "===================="
+ar = np.arange(3.0)
+print "np.arange(3.0): %s, dtype: %s" % (ar, ar.dtype)
+ar = np.arange(3)
+print "np.arange(3): %s, dtype: %s" % (ar, ar.dtype)
+ar = np.arange(3,7)
+print "np.arange(3,7): %s, dtype: %s" % (ar, ar.dtype)
+ar = np.arange(3,7, 2)
+print "np.arange(3,7, 2): %s, dtype: %s" % (ar, ar.dtype)
+ar = np.linspace(2.0, 3.0, num=5)
+print "np.linspace(2.0, 3.0, num=5): %s" % (ar,)
+ar = np.linspace(2.0, 3.0, num=5, endpoint=False)
+print "np.linspace(2.0, 3.0, num=5, endpoint=False): %s" % (ar,)
+ar = np.linspace(2.0, 3.0, num=5, retstep=True)
+print "np.linspace(2.0, 3.0, num=5, retstep=True): %s" % (ar,)
+```
+
+##matplotlib:
+- [x] plot(*args, **kwargs) with multiple lines
+- [x] using d3js
+- [x] show 
+- [x] all color spec (greyscale, hex, html, rgb, rgba, color shortcuts)
+- [x] color cycle
+- [x] rc params
+- [x] '.', 'o', 'x', 's' markers
+- [x] resize function for markers
+- [x] '-', '--', '.-' line styles
+- [x] auto scaling for axes
+
+### plot attributes
+- [x] title
+- [x] xlabel
+- [x] ylabel
+
+### Line2D attributes
+- [x] xdata
+- [x] ydata
+- [x] linewidth
+- [x] linestyle
+- [x] color
+- [x] marker
+- [x] markersize
+- [x] markeredgewidth
+- [x] markeredgecolor
+- [x] markerfacecolor
+- [x] markerfacecoloralt
+- [x] fillstyle
+- [ ] antialiased
+- [x] dash_capstyle
+- [x] solid_capstyle
+- [x] dash_joinstyle
+- [x] solid_jointyle
+- [ ] pickradius
+- [x] drawstyle
+- [ ] markevery
+
+### internal methods
+- [x] to_rgb
+- [x] hex2color
+- [x] rgb2hex
+- [x] _process_plot_format
+
+### Example code
+```python
+t = 3
+g = 9.81
+
+h = 0.5 * g * t**2
+
+print "h(t) = %d" % h
+
+import matplotlib.pyplot as pp
+import numpy as np
+
+t = np.linspace(0,10,10) #return ndarray
+h = 0.5 * g * t**2
+
+pp.plot(h, t, "--rx", t, h, "-yo", linewidth=3, markersize=6, dash_capstyle="projecting", markerfacecolor="b");
+pp.title("Free Fall")
+pp.xlabel("t in seconds")
+pp.ylabel("h in meters")
+pp.show()
+```
+
+math:
+- [x] updated math module using mathjs.org
+
+complex:
+- [ ] adding support for complex numbers (should rely on mathjs.org)
+
 # Welcome to Skulpt
 
 Skulpt is a Javascript implementation of Python 2.x.  Python that runs in your browser!  Python that runs on your iPad!  Its being used several projects including, [Interactive Python Textbooks](http://interactivepython.org) -- You can see skulpt in action there.  Try out [some turtle graphics examples](http://interactivepython.org/courselib/static/thinkcspy/PythonTurtle/helloturtle.html) to see Skulpt in action.
