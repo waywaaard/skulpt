@@ -108,6 +108,7 @@ Compiler.prototype.annotateSource = function (ast) {
         out("^\n//\n");
 
         out("currLineNo = ", lineno, ";\ncurrColNo = ", col_offset, ";\n\n");
+        out("Sk.locals = $loc;\n\n");
     }
 };
 
