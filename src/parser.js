@@ -152,7 +152,7 @@ Parser.prototype.addtoken = function (type, value, context) {
         } else {
             // no transition
             errline = context[0][0];
-            throw new Sk.builtin.ParseError("bad input", this.filename, errline, context);
+            throw new Sk.builtin.SyntaxError("invalid syntax", this.filename, errline, context);
         }
     }
 };
