@@ -399,6 +399,31 @@ class IntTestCases(unittest.TestCase):
         self.assertEqual(bool(True).conjugate(), 1)
         self.assertEqual(bool(False).conjugate(), 0)
 
+    def test_modulo(self):
+        # helper
+        def mod(a, b):
+            return a % b
+
+        self.assertRaises(ZeroDivisionError, mod, 5, 0)
+        self.assertEqual(mod(5, 1), 0)
+        self.assertEqual(mod(5, 2), 1)
+        self.assertEqual(mod(5, 4), 1)
+        self.assertEqual(mod(5, 5), 0)
+        self.assertEqual(mod(5, 6), 5)
+        self.assertEqual(mod(0, 1), 0)
+        self.assertEqual(mod(-5, 6), 1)
+        self.assertEqual(mod(-5, -2), -1)
+
+    def test_division(self):
+        self.assertEqual(3/2, 1)
+        self.assertEqual(3//2, 1)
+        self.assertEqual(3/2.0, 1.5)
+        self.assertEqual(3//2.0, 1.0)
+        self.assertEqual(-3/2, -2)
+        self.assertEqual(-3//2, -2)
+        self.assertEqual(-3/2.0, -1.5)
+        self.assertEqual(-3//2.0, -2.0)
+
 class IntTest(unittest.TestCase):
     def test_int_inherited(self):
         class c:
