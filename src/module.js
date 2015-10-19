@@ -10,15 +10,15 @@ Sk.builtin.module.prototype.tp$getattr = Sk.builtin.object.prototype.GenericGetA
 Sk.builtin.module.prototype.tp$setattr = Sk.builtin.object.prototype.GenericSetAttr;
 
 Sk.builtin.module.prototype["$r"] = function () {
-	var str = "<module '";
-	str += Sk.ffi.remapToJs(this["$d"].__name__);
-	str += "' from '";
-	if (this["$d"].__file__ != null) {
-		str += Sk.ffi.remapToJs(this["$d"].__file__);
-	} else {
-		str += "internal"
-	}
-	str += "'>";
+    var str = "<module '";
+    str += Sk.ffi.remapToJs(this["$d"]["__name__"]);
+    str += "' from '";
+    if (this["$d"]["__file__"] != null) {
+        str += Sk.ffi.remapToJs(this["$d"]["__file__"]);
+    } else {
+        str += "internal";
+    }
+    str += "'>";
 
-	return new Sk.builtin.str(str);
+    return new Sk.builtin.str(str);
 };
