@@ -214,6 +214,25 @@ Sk.builtin.KeyError = function (args) {
 Sk.abstr.setUpInheritance("KeyError", Sk.builtin.KeyError, Sk.builtin.StandardError);
 
 /**
+* Is thrown when the execution has been stopped by Ctrl+C or Del. The compiler
+* checks for an Sk.keyboardinterrupt flag, if set the exception is thrown.
+* @constructor
+* @extends Sk.builtin.BaseException
+* @param {...*} args
+*
+*/
+Sk.builtin.KeyboardInterrupt = function (args) {
+    var o;
+    if (!(this instanceof Sk.builtin.KeyboardInterrupt)) {
+        o = Object.create(Sk.builtin.KeyboardInterrupt.prototype);
+        o.constructor.apply(o, arguments);
+        return o;
+    }
+    Sk.builtin.BaseException.apply(this, arguments);
+};
+Sk.abstr.setUpInheritance("KeyboardInterrupt", Sk.builtin.KeyboardInterrupt, Sk.builtin.BaseException);
+
+/**
  * @constructor
  * @extends Sk.builtin.StandardError
  * @param {...*} args

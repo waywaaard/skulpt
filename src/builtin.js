@@ -1202,7 +1202,19 @@ Sk.builtin.iter = function iter () {
     throw new Sk.builtin.NotImplementedError("iter is not yet implemented");
 };
 Sk.builtin.locals = function locals () {
-    throw new Sk.builtin.NotImplementedError("locals is not yet implemented");
+    /*global Sk.locals */
+    if (Sk["locals"] != null) {
+        var localsDict = [];
+        for (var prop in Sk["locals"]) {
+            if (Sk["locals"].hasOwnProperty(prop)) {
+                localsDict.push(new Sk.builtin.str(prop));
+                localsDict.push(Sk["locals"][prop]);
+            } 
+        }
+        return new Sk.builtin.dict(localsDict);
+    } else {
+        throw new Sk.builtin.NotImplementedError("locals is not yet implemented");
+    }
 };
 Sk.builtin.memoryview = function memoryview () {
     throw new Sk.builtin.NotImplementedError("memoryview is not yet implemented");
