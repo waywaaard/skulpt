@@ -438,7 +438,11 @@ Sk.builtin.abs = function abs (x) {
         return Sk.misceval.callsim(x.__abs__, x);
     }
 
-    // ToDo: add here call for x.__abs__ for all types
+    // call custom __abs__ methods
+    if (x.tp$getattr) {
+        var f = x.tp$getattr("__abs__");
+        return Sk.misceval.callsim(f);
+    }
 
     throw new TypeError("bad operand type for abs(): '" + Sk.abstr.typeName(x) + "'");
 };
