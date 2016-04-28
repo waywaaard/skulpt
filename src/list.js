@@ -550,6 +550,13 @@ Sk.builtin.list.prototype["insert"] = new Sk.builtin.func(function (self, i, x) 
     return Sk.builtin.none.none$;
 });
 
+Sk.builtin.list.prototype["copy"] = new Sk.builtin.func(function(self, s) {
+    var slice = new Sk.builtins["slice"](new Sk.builtin.int_(0),new Sk.builtin.int_(2147483647),Sk.builtin.none.none$);
+    var copy = Sk.abstr.objectGetItem(self, slice, true);
+
+    return copy;
+});
+
 Sk.builtin.list.prototype["extend"] = new Sk.builtin.func(function (self, b) {
     Sk.builtin.pyCheckArgs("extend", arguments, 2, 2);
     self.list_extend_(b);

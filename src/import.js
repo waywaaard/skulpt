@@ -214,6 +214,9 @@ Sk.doOneTimeInitialization = function () {
         if ((func.prototype instanceof Sk.builtin.object ||
              func === Sk.builtin.object) && !func.sk$abstract) {
             setUpClass(func);
+
+            // add __name__ for builtins, Sk.builtin.str may not be available
+            func["$d"].mp$ass_subscript(new Sk.builtin.str("__name__"), new Sk.builtin.str(x));
         }
     }
 

@@ -203,6 +203,13 @@ Sk.builtin.func = function (code, globals, closure, closure2) {
         }
     }
     this.func_closure = closure;
+
+    if (Sk["builtin"] != null && Sk["builtin"]["str"] != null) {
+        this.__name__ = Object.create(Sk.builtin.str.prototype);
+        this.__name__.__class__ = Sk.builtin.str;
+        this.__name__.v = (this.func_code && this.func_code["co_name"] && this.func_code["co_name"].v) || "<native JS>";
+    }
+
     return this;
 };
 goog.exportSymbol("Sk.builtin.func", Sk.builtin.func);

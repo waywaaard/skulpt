@@ -211,6 +211,18 @@ Sk.misceval.swappedOp_ = {
     "NotIn": "In_"
 };
 
+Sk.misceval.compareOpToOp = {
+    "Eq"   : "==",
+    "NotEq": "!=",
+    "Lt"   : "<",
+    "LtE"  : "<=",
+    "Gt"   : ">",
+    "GtE"  : ">=",
+    "Is"   : "is",
+    "IsNot": "is not",
+    "In_"  : "in",
+    "NotIn": "not in"
+};
 
 Sk.misceval.richCompareBool = function (v, w, op) {
     // v and w must be Python objects. will return Javascript true or false for internal use only
@@ -295,6 +307,10 @@ Sk.misceval.richCompareBool = function (v, w, op) {
 
         // numeric types are always considered smaller than sequence types in Python
         if (v_num_type !== -1 && w_seq_type !== -1) {
+            // in Python 3 numeric types cannot be compared with other types
+            if (Sk.python3) {
+                throw new Sk.builtin.TypeError("unorderable types: " + new Sk.builtin.str(v_type).v + " "+ Sk.misceval.compareOpToOp[op] +" " + new Sk.builtin.str(w_type).v);
+            }
             switch (op) {
                 case "Lt":
                     return true;

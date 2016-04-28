@@ -32,7 +32,16 @@ Sk.configure = function (options) {
 
     Sk.read = options["read"] || Sk.read;
     goog.asserts.assert(typeof Sk.read === "function");
-
+   
+    Sk.nonreadopen = options.nonreadopen || false;
+    goog.asserts.assert("boolean" === typeof Sk.nonreadopen);
+   
+    Sk.fileopen = options.fileopen || undefined;
+    goog.asserts.assert("function" === typeof Sk.fileopen || "undefined" === typeof Sk.fileopen);
+   
+    Sk.filewrite = options.filewrite || undefined;
+    goog.asserts.assert("function" === typeof Sk.filewrite || "undefined" === typeof Sk.filewrite);
+   
     Sk.timeoutMsg = options["timeoutMsg"] || Sk.timeoutMsg;
     goog.asserts.assert(typeof Sk.timeoutMsg === "function");
     goog.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);

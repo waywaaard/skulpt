@@ -39,7 +39,7 @@ Sk.builtin.file = function (name, mode, buffering) {
     this.pos$ = 0;
 
     this.__class__ = Sk.builtin.file;
-
+    Sk.fileopen && Sk.fileopen(this);
     return this;
 };
 
@@ -148,8 +148,19 @@ Sk.builtin.file.prototype["truncate"] = new Sk.builtin.func(function (self, size
     goog.asserts.fail();
 });
 
-Sk.builtin.file.prototype["write"] = new Sk.builtin.func(function (self, str) {
-    goog.asserts.fail();
+Sk.builtin.file.prototype.write = new Sk.builtin.func(function(self, str) {
+    if (Sk.filewrite) {
+        if (self.closed) {
+            throw new Sk.builtin.ValueError("I/O operation on closed file");
+        }
+        if ("w" === self.mode.v || "b" === self.mode.v || "a" === self.mode.v || "a+" === self.mode.v || "w+" === self.mode.v) {
+            Sk.filewrite(self, str);
+        } else {
+            throw new Sk.builtin.IOError("File not open for writing");
+        }
+    } else {
+        goog.asserts.fail();
+    }
 });
 
 

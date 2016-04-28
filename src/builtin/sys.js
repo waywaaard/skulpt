@@ -65,5 +65,24 @@ var $builtinmodule = function (name) {
         return Sk.builtin.none.none$;
     });
 
+    sys.exit = new Sk.builtin.func(function(arg) {
+        Sk.builtin.pyCheckArgs("exit", arguments, 0, 1);
+        var exit_status;
+        if (arg == null || Sk.builtin.checkNone(arg)) {
+            exit_status = 0
+        } else if (Sk.builtin.checkInt(arg)){
+            exit_status = Sk.ffi.remapToJs(arg);
+        } else {
+            exit_status = 1;
+        }
+
+        if (Sk.builtin.checkString(arg)) {
+            // print arg to console
+            Sk.output(Sk.ffi.remapToJs(arg))
+        }
+
+        throw new Sk.builtin.SystemExit(exit_status);
+    });
+
     return sys;
 };

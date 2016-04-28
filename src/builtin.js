@@ -670,8 +670,8 @@ Sk.builtin.open = function open (filename, mode, bufsize) {
     if (mode === undefined) {
         mode = new Sk.builtin.str("r");
     }
-    if (mode.v !== "r" && mode.v !== "rb") {
-        throw "todo; haven't implemented non-read opens";
+    if (mode.v !== "r" && mode.v !== "b" && !Sk.nonreadopen) {
+        throw new Sk.builtin.ValueError("Hinweis: Bitte verwenden Sie PyCharm für dieses Beispiel. Das Schreiben von Dateien wird derzeit nicht online unterstützt.");
     }
     return new Sk.builtin.file(filename, mode, bufsize);
 };

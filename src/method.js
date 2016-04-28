@@ -7,6 +7,8 @@ Sk.builtin.method = function (func, self) {
     this.im_func = func;
     this.im_self = self;
     //print("constructing method", this.im_func.tp$name, this.im_self.tp$name);
+    var name = (this.im_func.func_code["co_name"] && this.im_func.func_code["co_name"].v) || "<native JS>";
+    this.__name__ = new Sk.builtin.str(name);
 };
 goog.exportSymbol("Sk.builtin.method", Sk.builtin.method);
 

@@ -427,12 +427,12 @@ Sk.builtin.str.prototype["rpartition"] = new Sk.builtin.func(function (self, sep
         new Sk.builtin.str(self.v.substring(pos + sepStr.v.length))]);
 });
 
-Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, pat, start, end) {
-    var ctl;
+Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, sub, start, end) {
     var slice;
-    var m;
+    var subString;
+
     Sk.builtin.pyCheckArgs("count", arguments, 2, 4);
-    if (!Sk.builtin.checkString(pat)) {
+    if (!Sk.builtin.checkString(sub)) {
         throw new Sk.builtin.TypeError("expected a character buffer object");
     }
     if ((start !== undefined) && !Sk.builtin.checkInt(start)) {
@@ -456,15 +456,27 @@ Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, pat, sta
         end = end >= 0 ? end : self.v.length + end;
     }
 
-    m = new RegExp(pat.v, "g");
     slice = self.v.slice(start, end);
-    ctl = slice.match(m);
-    if (!ctl) {
-        return  new Sk.builtin.int_(0);
-    } else {
-        return new Sk.builtin.int_(ctl.length);
+    subString = sub.v;
+    if (subString.length <= 0) {
+        return (slice.length + 1);
     }
 
+    var n = 0;
+    var pos = 0;
+    var step = subString.length;
+
+    while (true) {
+        pos = slice.indexOf(subString, pos);
+        if (pos >= 0) {
+            ++n;
+            pos += step;
+        } else {
+            break;
+        }
+    }
+
+    return  new Sk.builtin.int_(n);
 });
 
 Sk.builtin.str.prototype["ljust"] = new Sk.builtin.func(function (self, len, fillchar) {
@@ -1075,10 +1087,22 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
 
             return handleWidth(formatNumber(value, 10));
         } else if (conversionType === "o") {
+            // convert Value to int/long
+            if (Sk.python3) {
+                value = new Sk.builtin.int_(value).v;
+            }
             return handleWidth(formatNumber(value, 8));
         } else if (conversionType === "x") {
+            // convert Value to int/long
+            if (Sk.python3) {
+                value = new Sk.builtin.int_(value).v;
+            }
             return handleWidth(formatNumber(value, 16));
         } else if (conversionType === "X") {
+            // convert Value to int/long
+            if (Sk.python3) {
+                value = new Sk.builtin.int_(value).v;
+            }
             return handleWidth(formatNumber(value, 16)).toUpperCase();
         } else if (conversionType === "f" || conversionType === "F" || conversionType === "e" || conversionType === "E" || conversionType === "g" || conversionType === "G") {
             convValue = Sk.builtin.asnum$(value);

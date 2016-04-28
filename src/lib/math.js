@@ -408,5 +408,56 @@ var $builtinmodule = function (name) {
         return new Sk.builtin.int_(r);
     });
 
+    mod.frexp = new Sk.builtin.func(function (x) {
+        // taken from squeakjs vm
+        Sk.builtin.pyCheckArgs("frexp", arguments, 1, 1);
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
+        var value = new Sk.builtin.float_(x);
+        value = Sk.ffi.remapToJs(x); // convert to float?
+        var mantissa;
+        var exponent;
+        var ret;
+        var data;
+        var bits;
+
+        if (value == 0.0) {
+            mantissa = new Sk.builtin.float_(0.0);     // zero is special
+            exponent = new Sk.builtin.int_(0);
+        } else {
+            data = new DataView(new ArrayBuffer(8));
+            data.setFloat64(0, value);      // for accessing IEEE-754 exponent bits
+            bits = (data.getUint32(0) >>> 20) & 0x7FF;
+            if (bits === 0) { // we have a subnormal float (actual zero was handled above)
+                // make it normal by multiplying a large number
+                data.setFloat64(0, value * Math.pow(2, 64));
+                // access its exponent bits, and subtract the large number's exponent
+                bits = ((data.getUint32(0) >>> 20) & 0x7FF) - 64;
+            }
+            exponent = new Sk.builtin.int_(bits - 1022); // apply bias
+            mantissa = Sk.misceval.callsim(mod.ldexp, x, exponent.nb$negative());
+        }
+
+        ret = new Sk.builtin.tuple([mantissa, exponent]);
+        return ret;
+    });
+
+    mod.ldexp = new Sk.builtin.func(function(mantissa, exponent) {
+        Sk.builtin.pyCheckArgs("ldexp", arguments, 2, 2);
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(mantissa));
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkInt(exponent));
+
+        var _mantissa = Sk.ffi.remapToJs(mantissa);
+        var _exponent = Sk.ffi.remapToJs(exponent);
+        var ret;
+        // construct a float from mantissa and exponent
+        ret = _exponent > 1023 // avoid multiplying by infinity
+            ? _mantissa * Math.pow(2, 1023) * Math.pow(2, _exponent - 1023)
+            : _exponent < -1074 // avoid multiplying by zero
+            ? _mantissa * Math.pow(2, -1074) * Math.pow(2, _exponent + 1074)
+            : _mantissa * Math.pow(2, _exponent);
+
+        return new Sk.builtin.float_(ret);
+    });
+
     return mod;
 }
