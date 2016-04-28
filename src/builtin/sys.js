@@ -82,6 +82,7 @@ var $builtinmodule = function (name) {
 
         throw new Sk.builtin.SystemExit(exit_status);
     });
+    
     sys.__stdout__ = new Sk.builtin.file(new Sk.builtin.str("/dev/stdout"), "w");
     sys.__stdin__ = new Sk.builtin.file(new Sk.builtin.str("/dev/stdin"), "r");
 

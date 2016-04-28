@@ -668,16 +668,13 @@ Sk.builtin.repr = function repr (x) {
 Sk.builtin.open = function open (filename, mode, bufsize) {
     Sk.builtin.pyCheckArgs("open", arguments, 1, 3);
     if (mode === undefined) {
-        mode = new Sk.builtin.str("r");
+        mode = new Sk.builtin.str("r"); 
     }
-<<<<<<< HEAD
-    if (mode.v !== "r" && mode.v !== "b" && !Sk.nonreadopen) {
-        throw new Sk.builtin.ValueError("Hinweis: Bitte verwenden Sie PyCharm für dieses Beispiel. Das Schreiben von Dateien wird derzeit nicht online unterstützt.");
-    }
-=======
-
->>>>>>> upstream/master
     return new Sk.builtin.file(filename, mode, bufsize);
+    
+    /*if (mode.v !== "r" && mode.v !== "b" && !Sk.nonreadopen) {
+        throw new Sk.builtin.ValueError("Hinweis: Bitte verwenden Sie PyCharm für dieses Beispiel. Das Schreiben von Dateien wird derzeit nicht online unterstützt.");
+    }*/
 };
 
 Sk.builtin.isinstance = function isinstance (obj, type) {

@@ -1,3 +1,13 @@
+"TypeError: this.addFile is not a function at EmbedEditor.defaultFileOpen (http://localhost:8000/static/epy/js/embed.app.bundle.js:4101:22) 
+    at new Sk.builtin.file (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:21728:23) 
+    at $builtinmodule (eval at importCompiledCode (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:31801:38), <anonymous>:86:22) 
+    at eval (eval at importCompiledCode (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:31801:38), <anonymous>:95:1) 
+    at importCompiledCode (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:31801:38) 
+    at Object.Sk.importModuleInternal_ (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:31853:7) 
+    at Object.Sk.importModule (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:31862:15) 
+    at function_print (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:21414:22) 
+    at Sk.builtin.func.tp$call (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:7433:27) 
+    at Object.Sk.misceval.applyOrSuspend (http://localhost:8000/static/epy/modules/skulpt/skulpt.js:10700:26)"
 /**
  * @constructor
  * @param {Sk.builtin.str} name

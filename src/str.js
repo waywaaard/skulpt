@@ -427,7 +427,7 @@ Sk.builtin.str.prototype["rpartition"] = new Sk.builtin.func(function (self, sep
         new Sk.builtin.str(self.v.substring(pos + sepStr.v.length))]);
 });
 
-Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, pat, start, end) {
+Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, sub, start, end) {
     var normaltext;
     var ctl;
     var slice;
@@ -457,9 +457,6 @@ Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, pat, sta
         end = Sk.builtin.asnum$(end);
         end = end >= 0 ? end : self.v.length + end;
     }
-
-    normaltext = pat.v.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-    m = new RegExp(normaltext, "g");
 
     slice = self.v.slice(start, end);
     subString = sub.v;
