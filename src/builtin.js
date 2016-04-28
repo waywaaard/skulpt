@@ -670,9 +670,13 @@ Sk.builtin.open = function open (filename, mode, bufsize) {
     if (mode === undefined) {
         mode = new Sk.builtin.str("r");
     }
+<<<<<<< HEAD
     if (mode.v !== "r" && mode.v !== "b" && !Sk.nonreadopen) {
         throw new Sk.builtin.ValueError("Hinweis: Bitte verwenden Sie PyCharm für dieses Beispiel. Das Schreiben von Dateien wird derzeit nicht online unterstützt.");
     }
+=======
+
+>>>>>>> upstream/master
     return new Sk.builtin.file(filename, mode, bufsize);
 };
 
@@ -733,6 +737,7 @@ Sk.builtin.isinstance = function isinstance (obj, type) {
 
     return issubclass(obj.ob$type, type);
 };
+
 Sk.builtin.hash = function hash (value) {
     var junk;
     Sk.builtin.pyCheckArgs("hash", arguments, 1, 1);
@@ -802,33 +807,11 @@ Sk.builtin.setattr = function setattr (obj, name, value) {
 };
 
 Sk.builtin.raw_input = function (prompt) {
-    var x, resolution, susp;
-
-    prompt = prompt ? prompt.v : "";
-    x = Sk.inputfun(prompt);
-
-    if (x instanceof Promise) {
-        susp = new Sk.misceval.Suspension();
-
-        susp.resume = function() {
-            return new Sk.builtin.str(resolution);
-        };
-
-        susp.data = {
-            type: "Sk.promise",
-            promise: x.then(function(value) {
-                resolution = value;
-                return value;
-            }, function(err) {
-                resolution = "";
-                return err;
-            })
-        };
-
-        return susp;
-    } else {
-        return new Sk.builtin.str(x);
+    var sys = Sk.importModule("sys");
+    if (prompt) {
+        Sk.misceval.callsimOrSuspend(sys["$d"]["stdout"]["write"], sys["$d"]["stdout"], new Sk.builtin.str(prompt));
     }
+    return Sk.misceval.callsimOrSuspend(sys["$d"]["stdin"]["readline"], sys["$d"]["stdin"]);
 };
 
 Sk.builtin.input = Sk.builtin.raw_input;
@@ -1177,6 +1160,54 @@ Sk.builtin.format = function format (value, format_spec) {
     return Sk.abstr.objectFormat(value, format_spec);
 };
 
+Sk.builtin.reversed = function reversed (seq) {
+    Sk.builtin.pyCheckArgs("reversed", arguments, 1, 1);
+
+    var special = Sk.abstr.lookupSpecial(seq, "__reversed__");
+    if (special != null) {
+        return Sk.misceval.callsim(special, seq);
+    } else {
+        if (!Sk.builtin.checkSequence(seq)) {
+            throw new Sk.builtin.TypeError("'" + Sk.abstr.typeName(seq) + "' object is not a sequence");
+        }
+
+        /**
+         * Builds an iterator that outputs the items form last to first.
+         *
+         * @constructor
+         */
+        var reverseIter = function (obj) {
+            this.idx = obj.sq$length() - 1;
+            this.myobj = obj;
+            this.getitem = Sk.abstr.lookupSpecial(obj, "__getitem__");
+            this.tp$iter = function() {
+                return this;
+            },
+            this.tp$iternext = function () {
+                var ret;
+
+                if (this.idx < 0) {
+                    return undefined;
+                }
+
+                try {
+                    ret = Sk.misceval.callsim(this.getitem, this.myobj, Sk.ffi.remapToPy(this.idx));
+                } catch (e) {
+                    if (e instanceof Sk.builtin.IndexError) {
+                        return undefined;
+                    } else {
+                        throw e;
+                    }
+                }
+                this.idx--;
+                return ret;
+            };
+        };
+
+        return new reverseIter(seq);
+    }
+};
+
 Sk.builtin.bytearray = function bytearray () {
     throw new Sk.builtin.NotImplementedError("bytearray is not yet implemented");
 };
@@ -1227,9 +1258,6 @@ Sk.builtin.property = function property () {
 };
 Sk.builtin.reload = function reload () {
     throw new Sk.builtin.NotImplementedError("reload is not yet implemented");
-};
-Sk.builtin.reversed = function reversed () {
-    throw new Sk.builtin.NotImplementedError("reversed is not yet implemented");
 };
 Sk.builtin.vars = function vars () {
     throw new Sk.builtin.NotImplementedError("vars is not yet implemented");
