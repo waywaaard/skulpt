@@ -1007,7 +1007,6 @@ Sk.builtin.hasattr = function hasattr (obj, attr) {
     }
 };
 
-
 Sk.builtin.pow = function pow (a, b, c) {
     var ret;
     var res;
@@ -1272,7 +1271,6 @@ Sk.builtin.coerce = function coerce () {
 Sk.builtin.intern = function intern () {
     throw new Sk.builtin.NotImplementedError("intern is not yet implemented");
 };
-
 
 /*
  Sk.builtinFiles = {};
