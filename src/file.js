@@ -12,7 +12,7 @@ Sk.builtin.file = function (name, mode, buffering) {
         return new Sk.builtin.file(name, mode, buffering);
     }
 
-    this.mode = mode;
+    this.mode = Sk.ffi.remapToJs(mode);
     this.name = Sk.ffi.remapToJs(name);
     this.closed = false;
 
@@ -24,20 +24,33 @@ Sk.builtin.file = function (name, mode, buffering) {
     } else if (this.name === "/dev/stderr") {
         this.fileno = 2;
     } else {
-        this.fileno = 11;
-        this.data$ = Sk.read(name.v);
+        if (Sk.inBrowser) {
+            this.fileno = 11;
+            this.data$ = Sk["fileread"](this.name, this.mode);
+            
+            if (mode.v === "x" && this.data$ != null) {
+                throw new Sk.builtin.IOError("[Errno 2] File already exists: '" + name.v + "'");
+            }
 
-        if (this.data$ == null) {
-            throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
+            if (this.data$ == null) {
+                throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
+            }
+
+            this.lineList = this.data$.split("\n");
+            this.lineList = this.lineList.slice(0, -1);
+
+            for (i in this.lineList) {
+                this.lineList[i] = this.lineList[i] + "\n";
+            }
+            this.currentLine = 0;
+        } else {
+            this.fileno = 11;
+            this.data$ = Sk.read(name.v);
+
+            if (this.data$ == null) {
+                throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
+            }
         }
-
-        this.lineList = this.data$.split("\n");
-        this.lineList = this.lineList.slice(0, -1);
-
-        for (i in this.lineList) {
-            this.lineList[i] = this.lineList[i] + "\n";
-        }
-        this.currentLine = 0;
     }
     this.pos$ = 0;
 
@@ -191,8 +204,8 @@ Sk.builtin.file.prototype.write = new Sk.builtin.func(function(self, str) {
         if (self.closed) {
             throw new Sk.builtin.ValueError("I/O operation on closed file");
         }
-        if ("w" === self.mode.v || "b" === self.mode.v || "a" === self.mode.v || "a+" === self.mode.v || "w+" === self.mode.v) {
-            Sk.filewrite(self, str);
+        if ("w" === self.mode || "b" === self.mode || "a" === self.mode || "a+" === self.mode || "w+" === self.mode) {
+            Sk.filewrite(self, Sk.ffi.remapToJs(str));
         } else {
             throw new Sk.builtin.IOError("File not open for writing");
         }

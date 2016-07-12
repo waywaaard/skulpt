@@ -41,6 +41,9 @@ Sk.configure = function (options) {
    
     Sk.filewrite = options.filewrite || undefined;
     goog.asserts.assert("function" === typeof Sk.filewrite || "undefined" === typeof Sk.filewrite);
+
+    Sk.fileread = options.fileread || undefined;
+    goog.asserts.assert("function" === typeof Sk.fileread || "undefined" === typeof Sk.fileread);
    
     Sk.timeoutMsg = options["timeoutMsg"] || Sk.timeoutMsg;
     goog.asserts.assert(typeof Sk.timeoutMsg === "function");
