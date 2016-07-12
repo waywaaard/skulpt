@@ -24,21 +24,11 @@ Sk.builtin.file = function (name, mode, buffering) {
     } else if (this.name === "/dev/stderr") {
         this.fileno = 2;
     } else {
-        if (Sk.inBrowser) {  // todo:  Maybe provide a replaceable function for non-import files
-            this.fileno = 10;
-            elem = document.getElementById(name.v);
-            if (elem == null) {
-                throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
-            } else {
-                if (elem.nodeName.toLowerCase() == "textarea") {
-                    this.data$ = elem.value;
-                } else {
-                    this.data$ = elem.textContent;
-                }
-            }
-        } else {
-            this.fileno = 11;
-            this.data$ = Sk.read(name.v);
+        this.fileno = 11;
+        this.data$ = Sk.read(name.v);
+
+        if (this.data$ == null) {
+            throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
         }
 
         this.lineList = this.data$.split("\n");
