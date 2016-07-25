@@ -984,12 +984,12 @@ Sk.misceval.asyncToPromise = function(suspendablefn, suspHandlers) {
                         } else if (r.data["type"] == "Sk.yield") {
                             // Assumes all yields are optional, as Sk.setTimeout might
                             // not be able to yield.
-                            Sk.setTimeout(resume, 0);
+                            //Sk.setTimeout(resume, 0);
+                            setImmediate(resume);
                             return;
 
-                        } else if (r.data["type"] == "Sk.nextTick") {
-                            //Sk.setTimeout(resume, 0);
-                            Sk.misceval.setZeroTimeout(resume);
+                        } else if (r.data["type"] == "Sk.delay") {
+                            setImmediate(resume);
                             return;
 
                         } else if (r.optional) {
