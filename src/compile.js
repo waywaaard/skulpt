@@ -933,7 +933,8 @@ Compiler.prototype.outputSuspensionHelpers = function (unit) {
     var localsToSave = unit.localnames.concat(unit.tempsToSave);
     var seenTemps = {};
     var hasCell = unit.ste.blockType === FunctionBlock && unit.ste.childHasFree;
-    var output = "var $wakeFromSuspension = function() {" +
+    var output = (localsToSave.length > 0 ? ("var " + localsToSave.join(",") + ";") : "") +
+                 "var $wakeFromSuspension = function() {" +
                     "var susp = "+unit.scopename+".$wakingSuspension; delete "+unit.scopename+".$wakingSuspension;" +
                     "$blk=susp.$blk; $loc=susp.$loc; $gbl=susp.$gbl; $exc=susp.$exc; $err=susp.$err;" +
                     "$currLineNo=susp.$lineno; $currColNo=susp.$colno; Sk.lastYield=Date.now();" +
@@ -1263,9 +1264,7 @@ Compiler.prototype.ctryexcept = function (s) {
             // var isinstance = this.nameop(new Sk.builtin.str("isinstance"), Load));
             // var check = this._gr('call', "Sk.misceval.callsim(", isinstance, ", $err, ", handlertype, ")");
 
-            // this check is not right, should use isinstance, but exception objects
-            // are not yet proper Python objects
-            check = this._gr("instance", "$err instanceof ", handlertype);
+            check = this._gr("instance", "Sk.misceval.isTrue(Sk.builtin.isinstance($err, ", handlertype, "))");
             this._jumpfalse(check, next);
         }
 
@@ -1722,13 +1721,13 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     }
     else {
         var res;
-        if (decos.length > 0)
-        {
-            res = this._gr("funcobj", "Sk.misceval.callsim(", scopename, ".$decorators[0], new Sk.builtins['function'](", scopename, ",$gbl", frees, "))"); // scopename, ".$decorators[0](new Sk.builtins['function'](", scopename, ",$gbl", frees, "))";
-        } else {
-            res = this._gr("funcobj", "new Sk.builtins['function'](", scopename, ",$gbl", frees, ")");
+        if (decos.length > 0) {
+            out("$ret = Sk.misceval.callsimOrSuspend(", scopename, ".$decorators[0], new Sk.builtins['function'](", scopename, ",$gbl", frees, "));");
+            this._checkSuspension();
+            return this._gr("funcobj", "$ret");
         }
-        return res;
+
+        return this._gr("funcobj", "new Sk.builtins['function'](", scopename, ",$gbl", frees, ")");
     }
 };
 
@@ -2360,9 +2359,9 @@ Sk.compile = function (source, filename, mode, canSuspend) {
     var c = new Compiler(filename, st, flags.cf_flags, canSuspend, source); // todo; CO_xxx
     var funcname = c.cmod(ast);
 
-    var ret = c.result.join("");
+    var ret = "$compiledmod = function() {" + c.result.join("") + "\nreturn " + funcname + ";}();";
     return {
-        funcname: funcname,
+        funcname: "$compiledmod",
         code    : ret
     };
 };

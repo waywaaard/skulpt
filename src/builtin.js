@@ -807,10 +807,13 @@ Sk.builtin.setattr = function setattr (obj, name, value) {
 
 Sk.builtin.raw_input = function (prompt) {
     var sys = Sk.importModule("sys");
-    if (prompt) {
-        Sk.misceval.callsimOrSuspend(sys["$d"]["stdout"]["write"], sys["$d"]["stdout"], new Sk.builtin.str(prompt));
-    }
-    return Sk.misceval.callsimOrSuspend(sys["$d"]["stdin"]["readline"], sys["$d"]["stdin"]);
+    var lprompt = prompt ? prompt : "";
+
+    return Sk.misceval.chain(undefined, function () {
+        return Sk.misceval.callsimOrSuspend(sys["$d"]["stdout"]["write"], sys["$d"]["stdout"], new Sk.builtin.str(prompt));
+    }, function () {
+        return Sk.misceval.callsimOrSuspend(sys["$d"]["stdin"]["readline"], sys["$d"]["stdin"]);
+    });
 };
 
 Sk.builtin.input = Sk.builtin.raw_input;
@@ -1289,9 +1292,6 @@ Sk.builtin.next_ = function next_ (iter, default_) {
     return nxt;
 };
 
-Sk.builtin.property = function property () {
-    throw new Sk.builtin.NotImplementedError("property is not yet implemented");
-};
 Sk.builtin.reload = function reload () {
     throw new Sk.builtin.NotImplementedError("reload is not yet implemented");
 };
