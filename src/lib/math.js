@@ -322,18 +322,6 @@ var $builtinmodule = function (name) {
         }
     });
 
-    mod.isinf = new Sk.builtin.func(function(x) {
-        Sk.builtin.pyCheckArgs("isinf", arguments, 1, 1);
-        Sk.builtin.pyCheckType("x", "float", Sk.builtin.checkFloat(x));
-
-        var _x = Sk.builtin.asnum$(x);
-        if (!isFinite(_x)) {
-            return Sk.builtin.bool.true$;
-        } else {
-            return Sk.builtin.bool.false$;
-        }
-    });
-
     mod.exp = new Sk.builtin.func(function (x) {
         Sk.builtin.pyCheckArgs("exp", arguments, 1, 1);
         Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
