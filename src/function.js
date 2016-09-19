@@ -258,6 +258,7 @@ Sk.builtin.func.prototype.tp$call = function (args, kw) {
                 args.push(undefined);
             }
         }
+
         args.push(this.func_closure);
     }
 
