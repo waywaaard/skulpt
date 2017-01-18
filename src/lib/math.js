@@ -153,8 +153,9 @@ var $builtinmodule = function (name) {
         var res;
 
         var isNeg_x = _x < 0;
-        var isNeg_y = _x < 0;
+        var isNeg_y = _y < 0;
 
+        // ToDo: it seems that Python3 copysign(1, -0) return 1!
         // special case for floats with negative zero
         if(Sk.builtin.checkFloat(x)) {
             if(_x === 0) {
@@ -170,14 +171,14 @@ var $builtinmodule = function (name) {
 
         // if both signs are equal, just return _y
         if((isNeg_x && isNeg_y) || (!isNeg_x && !isNeg_y)) {
-            res = _y;
+            res = _x;
         } else if((isNeg_x && !isNeg_y) || (!isNeg_x && isNeg_y)) {
             // if different, invert sign
-            if(y === 0) {
+            if(x === 0) {
                 // special case for zero
                 res = isNeg_x ? -0.0 : 0.0;
             } else {
-                res = _y * -1;
+                res = _x * -1;
             }
         }
 
@@ -208,21 +209,90 @@ var $builtinmodule = function (name) {
     mod.log = new Sk.builtin.func(function (x, base) {
         Sk.builtin.pyCheckArgs("log", arguments, 1, 2);
         Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
+        var js_x = Sk.builtin.asnum$(x);
+
+        // negative values for x should rais an ValueError
+        if(js_x < 0 || js_x == Number.NEGATIVE_INFINITY) {
+            throw new Sk.builtin.ValueError('math domain error');
+        }
+
+        if (Sk.misceval.callsim(mod.isnan, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$) {
+            return new Sk.builtin.float_('nan');
+        } 
+
+        if (Sk.misceval.callsim(mod.isinf, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$) {
+            return new Sk.builtin.float_(x);
+        }
 
         if (base === undefined) {
-            return new Sk.builtin.float_(Math.log(Sk.builtin.asnum$(x)));
+            return new Sk.builtin.float_(Math.log(js_x));
         } else {
             Sk.builtin.pyCheckType("base", "number", Sk.builtin.checkNumber(base));
-            var ret = Math.log(Sk.builtin.asnum$(x)) / Math.log(Sk.builtin.asnum$(base));
+            var ret = Math.log(js_x) / Math.log(Sk.builtin.asnum$(base));
             return new Sk.builtin.float_(ret);
         }
+    });
+
+    mod.log1p = new Sk.builtin.func(function (x) {
+        Sk.builtin.pyCheckArgs("log1p", arguments, 1, 2);
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
+        var js_x = Sk.builtin.asnum$(x);
+
+        if (x == 0.0) {
+            return x;
+        } else {
+            var ret = Math.log(1.0 + Sk.builtin.asnum$(x));
+            return new Sk.builtin.float_(ret);
+        }
+    });
+
+    mod.log2 = new Sk.builtin.func(function (x) {
+        Sk.builtin.pyCheckArgs("log2", arguments, 1, 1);
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
+        var ret;
+        var js_x = Sk.builtin.asnum$(x);
+
+        // negative values for x should rais an ValueError
+        if (js_x < 0 || js_x == Number.NEGATIVE_INFINITY) {
+            throw new Sk.builtin.ValueError('math domain error');
+        }
+
+        if (Sk.misceval.callsim(mod.isnan, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$) {
+            return new Sk.builtin.float_('nan');
+        } 
+
+        if (Sk.misceval.callsim(mod.isinf, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$) {
+            return new Sk.builtin.float_(x);
+        }
+
+        if (Math.log2 && typeof Math.log2 === 'function') {
+            ret = Math.log2(js_x);
+        } else {
+            ret = Math.log(js_x) / Math.LN2;
+        }
+
+        return new Sk.builtin.float_(ret);
     });
 
     mod.log10 = new Sk.builtin.func(function (x) {
         Sk.builtin.pyCheckArgs("log10", arguments, 1, 1);
         Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
+        var js_x = Sk.builtin.asnum$(x);
 
-        var ret = Math.log(Sk.builtin.asnum$(x)) / Math.log(10);
+        // negative values for x should raise an ValueError
+        if (js_x < 0 || js_x == Number.NEGATIVE_INFINITY) {
+            throw new Sk.builtin.ValueError('math domain error');
+        }
+
+        if (Sk.misceval.callsim(mod.isnan, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$) {
+            return new Sk.builtin.float_('nan');
+        } 
+
+        if (Sk.misceval.callsim(mod.isinf, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$) {
+            return new Sk.builtin.float_(x);
+        }
+
+        var ret = Math.log(js_x) / Math.log(10);
         return new Sk.builtin.float_(ret);
     });
 
@@ -245,7 +315,7 @@ var $builtinmodule = function (name) {
         Sk.builtin.pyCheckType("x", "float", Sk.builtin.checkFloat(x));
 
         var _x = Sk.builtin.asnum$(x);
-        if(isNaN(_x)) {
+        if (isNaN(_x)) {
             return Sk.builtin.bool.true$;
         } else {
             return Sk.builtin.bool.false$;
@@ -263,6 +333,40 @@ var $builtinmodule = function (name) {
         Sk.builtin.pyCheckArgs("pow", arguments, 2, 2);
         Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
         Sk.builtin.pyCheckType("y", "number", Sk.builtin.checkNumber(y));
+        var js_x = Sk.builtin.asnum$(x);
+        var js_y = Sk.builtin.asnum$(y);
+        /*
+        if (js_x == 1) {
+            return new Sk.builtin.float_(1.0);
+        }
+
+        if (js_x == 0 && js_y >= 0) {
+            return new Sk.builtin.float_(0.0);
+        }
+
+        if (js_x == 0 && js_y == 0) {
+            return new Sk.builtin.float_(1.0);
+        }
+
+        // negative values for x should raise an ValueError
+        if (js_x == 0 && (js_y < 0 || js_y == Number.NEGATIVE_INFINITY) && !Sk.builtin.checkInt(y)) {
+            throw new Sk.builtin.ValueError('math domain error');
+        }
+
+        // pow(x, y) should work for x negative, y an integer
+        if (js_x < 0 && js_y != Number.NEGATIVE_INFINITY && js_y == Number.INFINITY && !Sk.builtin.checkInt(y)) {
+            throw new Sk.builtin.ValueError('math domain error');
+        }
+
+        if (Sk.misceval.callsim(mod.isinf, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$) {
+            return x;
+        }
+
+        if (Sk.misceval.callsim(mod.isnan, new Sk.builtin.float_(x)) == Sk.builtin.bool.true$ || 
+            Sk.misceval.callsim(mod.isnan, new Sk.builtin.float_(y)) == Sk.builtin.bool.true$) {
+            return new Sk.builtin.float_('nan');
+        }*/
+        // change t439.real in line 39 to 0.0 to match real python behavior
 
         return new Sk.builtin.float_(Math.pow(Sk.builtin.asnum$(x), Sk.builtin.asnum$(y)));
     });
@@ -303,6 +407,57 @@ var $builtinmodule = function (name) {
             r *= i;
         }
         return new Sk.builtin.int_(r);
+    });
+
+    mod.frexp = new Sk.builtin.func(function (x) {
+        // taken from squeakjs vm
+        Sk.builtin.pyCheckArgs("frexp", arguments, 1, 1);
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(x));
+        var value = new Sk.builtin.float_(x);
+        value = Sk.ffi.remapToJs(x); // convert to float?
+        var mantissa;
+        var exponent;
+        var ret;
+        var data;
+        var bits;
+
+        if (value == 0.0) {
+            mantissa = new Sk.builtin.float_(0.0);     // zero is special
+            exponent = new Sk.builtin.int_(0);
+        } else {
+            data = new DataView(new ArrayBuffer(8));
+            data.setFloat64(0, value);      // for accessing IEEE-754 exponent bits
+            bits = (data.getUint32(0) >>> 20) & 0x7FF;
+            if (bits === 0) { // we have a subnormal float (actual zero was handled above)
+                // make it normal by multiplying a large number
+                data.setFloat64(0, value * Math.pow(2, 64));
+                // access its exponent bits, and subtract the large number's exponent
+                bits = ((data.getUint32(0) >>> 20) & 0x7FF) - 64;
+            }
+            exponent = new Sk.builtin.int_(bits - 1022); // apply bias
+            mantissa = Sk.misceval.callsim(mod.ldexp, x, exponent.nb$negative());
+        }
+
+        ret = new Sk.builtin.tuple([mantissa, exponent]);
+        return ret;
+    });
+
+    mod.ldexp = new Sk.builtin.func(function(mantissa, exponent) {
+        Sk.builtin.pyCheckArgs("ldexp", arguments, 2, 2);
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkNumber(mantissa));
+        Sk.builtin.pyCheckType("x", "number", Sk.builtin.checkInt(exponent));
+
+        var _mantissa = Sk.ffi.remapToJs(mantissa);
+        var _exponent = Sk.ffi.remapToJs(exponent);
+        var ret;
+        // construct a float from mantissa and exponent
+        ret = _exponent > 1023 // avoid multiplying by infinity
+            ? _mantissa * Math.pow(2, 1023) * Math.pow(2, _exponent - 1023)
+            : _exponent < -1074 // avoid multiplying by zero
+            ? _mantissa * Math.pow(2, -1074) * Math.pow(2, _exponent + 1074)
+            : _mantissa * Math.pow(2, _exponent);
+
+        return new Sk.builtin.float_(ret);
     });
 
     return mod;

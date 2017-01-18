@@ -415,13 +415,14 @@ Sk.builtin.str.prototype["rpartition"] = new Sk.builtin.func(function (self, sep
         new Sk.builtin.str(self.v.substring(pos + sepStr.v.length))]);
 });
 
-Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, pat, start, end) {
+Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, sub, start, end) {
     var normaltext;
     var ctl;
     var slice;
-    var m;
+    var subString;
+
     Sk.builtin.pyCheckArgs("count", arguments, 2, 4);
-    if (!Sk.builtin.checkString(pat)) {
+    if (!Sk.builtin.checkString(sub)) {
         throw new Sk.builtin.TypeError("expected a character buffer object");
     }
     if ((start !== undefined) && !Sk.builtin.checkInt(start)) {
@@ -445,16 +446,27 @@ Sk.builtin.str.prototype["count"] = new Sk.builtin.func(function (self, pat, sta
         end = end >= 0 ? end : self.v.length + end;
     }
 
-    normaltext = pat.v.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-    m = new RegExp(normaltext, "g");
     slice = self.v.slice(start, end);
-    ctl = slice.match(m);
-    if (!ctl) {
-        return  new Sk.builtin.int_(0);
-    } else {
-        return new Sk.builtin.int_(ctl.length);
+    subString = sub.v;
+    if (subString.length <= 0) {
+        return (slice.length + 1);
     }
 
+    var n = 0;
+    var pos = 0;
+    var step = subString.length;
+
+    while (true) {
+        pos = slice.indexOf(subString, pos);
+        if (pos >= 0) {
+            ++n;
+            pos += step;
+        } else {
+            break;
+        }
+    }
+
+    return  new Sk.builtin.int_(n);
 });
 
 Sk.builtin.str.prototype["ljust"] = new Sk.builtin.func(function (self, len, fillchar) {
@@ -907,6 +919,7 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
         var leftAdjust;
         var zeroPad;
         var i;
+        var percent;
         fieldWidth = Sk.builtin.asnum$(fieldWidth);
         precision = Sk.builtin.asnum$(precision);
 
@@ -937,6 +950,10 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
             }
 
             alternateForm = conversionFlags.indexOf("#") !== -1;
+        }
+
+        if("%".indexOf(conversionType) !== -1){
+            percent = true;
         }
 
         if (precision) {
@@ -973,7 +990,9 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
                 neg = n.nb$isnegative();	//	neg = n.size$ < 0;	RNL long.js change
             }
 
-            goog.asserts.assert(r !== undefined, "unhandled number format");
+            if (r == null) {
+                throw new Sk.builtin.ValueError("unhandled number format");
+            }
 
             precZeroPadded = false;
 
@@ -1011,6 +1030,11 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
             var prefix = args[0];
             var r = args[1];
             var j;
+
+            if (percent){
+                r = r +"%";
+            }
+
             if (fieldWidth) {
                 fieldWidth = parseInt(fieldWidth, 10);
                 totLen = r.length + prefix.length;
@@ -1046,12 +1070,29 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
         }
         base = 10;
         if (conversionType === "d" || conversionType === "i") {
+            // convert Value to int/long
+            if (Sk.python3) {
+                value = new Sk.builtin.int_(value).v;
+            }
+
             return handleWidth(formatNumber(value, 10));
         } else if (conversionType === "o") {
+            // convert Value to int/long
+            if (Sk.python3) {
+                value = new Sk.builtin.int_(value).v;
+            }
             return handleWidth(formatNumber(value, 8));
         } else if (conversionType === "x") {
+            // convert Value to int/long
+            if (Sk.python3) {
+                value = new Sk.builtin.int_(value).v;
+            }
             return handleWidth(formatNumber(value, 16));
         } else if (conversionType === "X") {
+            // convert Value to int/long
+            if (Sk.python3) {
+                value = new Sk.builtin.int_(value).v;
+            }
             return handleWidth(formatNumber(value, 16)).toUpperCase();
         } else if (conversionType === "f" || conversionType === "F" || conversionType === "e" || conversionType === "E" || conversionType === "g" || conversionType === "G") {
             convValue = Sk.builtin.asnum$(value);
@@ -1072,17 +1113,29 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
                 if (conversionType === "e" || conversionType === "E") {
                     precision = 6;
                 } else if (conversionType === "f" || conversionType === "F") {
-                    precision = 7;
+                    precision = Sk.python3 ? 6 : 7;
                 }
             }
             result = (convValue)[convName](precision); // possible loose of negative zero sign
 
+            var neg = false;
             // apply sign to negative zeros, floats only!
             if(Sk.builtin.checkFloat(value)) {
                 if(convValue === 0 && 1/convValue === -Infinity) {
                     result = "-" + result; // add sign for zero
                 }
             }
+
+            // add prefixes if required
+            var efgPrefix = "";
+
+            if (precedeWithSign && convValue >= 0 && result.indexOf("-") !== 0) {
+                efgPrefix = "+" + efgPrefix;
+            } else if (blankBeforePositive) {
+                efgPrefix = " " + efgPrefix;
+            }
+
+            result = efgPrefix + result;
 
             if ("EFG".indexOf(conversionType) !== -1) {
                 result = result.toUpperCase();
@@ -1119,6 +1172,8 @@ Sk.builtin.str.prototype.nb$remainder = function (rhs) {
             return r.v;
         } else if (conversionType === "%") {
             return "%";
+        } else {
+            throw new Sk.builtin.ValueError("unsupported format character '" + conversionType + "' at index " + index);
         }
     };
 

@@ -69,6 +69,7 @@ Files = [
         ('support/closure-library/closure/goog/debug/error.js',     FILE_TYPE_DIST),
         ('support/closure-library/closure/goog/asserts/asserts.js', FILE_TYPE_DIST),
         ('support/es6-promise-polyfill/promise-1.0.0.hacked.js',    FILE_TYPE_DIST),
+        'support/setImmediate/setImmediate.js',
         'src/env.js',
         'src/type.js',
         'src/abstract.js',
@@ -729,11 +730,19 @@ def dist(options):
     builtinfn = os.path.join(DIST_DIR, OUTFILE_LIB)
     debuggerfn = os.path.join(DIST_DIR, OUTFILE_DEBUGGER)
 
+    ret = test()
+
     # Run tests on uncompressed.
     if options.verbose:
-        print ". Running tests on uncompressed..."
+        print ". Re-Running tests on uncompressed... with debug mode on to find suspension errors."
 
-    ret = test()
+    # turn the tests in debug mode off because they take too long
+    # # Run tests on uncompressed.
+    # if options.verbose:
+    #     print ". Re-Running tests on uncompressed... with debug mode on to find suspension errors."
+    #
+    #
+    # ret = test(debug_mode=True)
 
     # turn the tests in debug mode off because they take too long
     # # Run tests on uncompressed.
@@ -881,7 +890,7 @@ def run_in_browser(fn, options, debug_mode=False):
 
     with open('support/run_template.html') as tpfile:
         page = tpfile.read()
-        page = page % dict(code=prog,scripts=scripts,debug_mode=str(debug_mode).lower())
+        page = page % dict(code=prog,scripts=scripts,debug_mode=str(debug_mode).lower(),root="")
 
     with open("{0}/run.html".format(RUN_DIR),"w") as htmlfile:
         htmlfile.write(page)

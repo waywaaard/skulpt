@@ -108,6 +108,7 @@ Compiler.prototype.annotateSource = function (ast) {
         out("^\n//\n");
 
         out("$currLineNo = ", lineno, ";\n$currColNo = ", col_offset, ";\n\n");
+        //out("Sk.locals = $loc;\n\n");
     }
 };
 
@@ -1092,7 +1093,23 @@ Compiler.prototype.cwhile = function (s) {
         this.pushContinueBlock(top);
 
         this.setBlock(body);
+
+        if ((Sk.debugging || Sk.killableWhile) && this.u.canSuspend) {
+            var suspType = 'Sk.delay';
+            var debugBlock = this.newBlock("debug breakpoint for line "+s.lineno);
+            out("if (Sk.breakpoints('"+this.filename+"',"+s.lineno+","+s.col_offset+")) {",
+                "var $susp = $saveSuspension({data: {type: '"+suspType+"'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+");",
+                "$susp.$blk = "+debugBlock+";",
+                "$susp.optional = true;",
+                "return $susp;",
+                "}");
+            this._jump(debugBlock);
+            this.setBlock(debugBlock);
+            this.u.doesSuspend = true;
+        }
+
         this.vseqstmt(s.body);
+
         this._jump(top);
 
         this.popContinueBlock();
@@ -1145,6 +1162,20 @@ Compiler.prototype.cfor = function (s) {
     nexti = this._gr("next", "$ret");
     this._jumpundef(nexti, cleanup); // todo; this should be handled by StopIteration
     target = this.vexpr(s.target, nexti);
+
+    if ((Sk.debugging || Sk.killableFor) && this.u.canSuspend) {
+        var suspType = 'Sk.delay';
+        var debugBlock = this.newBlock("debug breakpoint for line "+s.lineno);
+        out("if (Sk.breakpoints('"+this.filename+"',"+s.lineno+","+s.col_offset+")) {",
+            "var $susp = $saveSuspension({data: {type: '"+suspType+"'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+");",
+            "$susp.$blk = "+debugBlock+";",
+            "$susp.optional = true;",
+            "return $susp;",
+            "}");
+        this._jump(debugBlock);
+        this.setBlock(debugBlock);
+        this.u.doesSuspend = true;
+    }
 
     // execute body
     this.vseqstmt(s.body);
@@ -1471,9 +1502,14 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
         }
     }
     if (hasFree) {
-        funcArgs.push("$free");
-        this.u.tempsToSave.push("$free");
+        if (vararg) {
+            this.u.varDeclsCode += "$free = arguments[arguments.length-1];"
+        } else {
+            funcArgs.push("$free");
+            this.u.tempsToSave.push("$free");
+        }
     }
+
     this.u.prefixCode += funcArgs.join(",");
 
     this.u.prefixCode += "){";
@@ -1565,8 +1601,9 @@ Compiler.prototype.buildcodeobj = function (n, coname, decorator_list, args, cal
     //
     if (vararg) {
         start = funcArgs.length;
+
         this.u.localnames.push(vararg.v);
-        this.u.varDeclsCode += vararg.v + "=new Sk.builtins['tuple'](Array.prototype.slice.call(arguments," + start + ")); /*vararg*/";
+        this.u.varDeclsCode += vararg.v + "=new Sk.builtins['tuple'](Array.prototype.slice.call(arguments," + start + (hasFree ? ",-1)" : ")") + "); /*vararg*/";
     }
 
     //
@@ -2263,6 +2300,7 @@ Compiler.prototype.cmod = function (mod) {
     this.u.varDeclsCode += "if ("+modf+".$wakingSuspension!==undefined) { $wakeFromSuspension(); }" +
         "if (Sk.retainGlobals) {" +
         "    if (Sk.globals) { $gbl = Sk.globals; Sk.globals = $gbl; $loc = $gbl; }" +
+        "    if (Sk.globals) { $gbl = Sk.globals; Sk.globals = $gbl; $loc = $gbl; $gbl.__name__=$modname;$loc.__file__=new Sk.builtins.str('" + this.filename + "');}" +
         "    else { Sk.globals = $gbl; }" +
         "} else { Sk.globals = $gbl; }";
 

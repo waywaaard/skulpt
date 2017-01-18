@@ -32,7 +32,19 @@ Sk.configure = function (options) {
 
     Sk.read = options["read"] || Sk.read;
     goog.asserts.assert(typeof Sk.read === "function");
+   
+    Sk.nonreadopen = options.nonreadopen || false;
+    goog.asserts.assert("boolean" === typeof Sk.nonreadopen);
+   
+    Sk.fileopen = options.fileopen || undefined;
+    goog.asserts.assert("function" === typeof Sk.fileopen || "undefined" === typeof Sk.fileopen);
+   
+    Sk.filewrite = options.filewrite || undefined;
+    goog.asserts.assert("function" === typeof Sk.filewrite || "undefined" === typeof Sk.filewrite);
 
+    Sk.fileread = options.fileread || undefined;
+    goog.asserts.assert("function" === typeof Sk.fileread || "undefined" === typeof Sk.fileread);
+   
     Sk.timeoutMsg = options["timeoutMsg"] || Sk.timeoutMsg;
     goog.asserts.assert(typeof Sk.timeoutMsg === "function");
     goog.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
@@ -49,11 +61,20 @@ Sk.configure = function (options) {
     Sk.inputfun = options["inputfun"] || Sk.inputfun;
     goog.asserts.assert(typeof Sk.inputfun === "function");
     
+    Sk.inputfunTakesPrompt = options["inputfunTakesPrompt"] || false;
+    goog.asserts.assert(typeof Sk.inputfunTakesPrompt === "boolean");
+
     Sk.retainGlobals = options["retainglobals"] || false;
     goog.asserts.assert(typeof Sk.retainGlobals === "boolean");
 
     Sk.debugging = options["debugging"] || false;
     goog.asserts.assert(typeof Sk.debugging === "boolean");
+
+    Sk.killableWhile = options["killableWhile"] || false;
+    goog.asserts.assert(typeof Sk.killableWhile === "boolean");
+
+    Sk.killableFor = options["killableFor"] || false;
+    goog.asserts.assert(typeof Sk.killableFor === "boolean");
 
     Sk.breakpoints = options["breakpoints"] || function() { return true; };
     goog.asserts.assert(typeof Sk.breakpoints === "function");

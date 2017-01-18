@@ -211,6 +211,19 @@ Sk.misceval.swappedOp_ = {
     "NotIn": "In_"
 };
 
+Sk.misceval.compareOpToOp = {
+    "Eq"   : "==",
+    "NotEq": "!=",
+    "Lt"   : "<",
+    "LtE"  : "<=",
+    "Gt"   : ">",
+    "GtE"  : ">=",
+    "Is"   : "is",
+    "IsNot": "is not",
+    "In_"  : "in",
+    "NotIn": "not in"
+};
+
 /**
 * @param{*} v
 * @param{*} w
@@ -300,6 +313,10 @@ Sk.misceval.richCompareBool = function (v, w, op, canSuspend) {
 
         // numeric types are always considered smaller than sequence types in Python
         if (v_num_type !== -1 && w_seq_type !== -1) {
+            // in Python 3 numeric types cannot be compared with other types
+            if (Sk.python3) {
+                throw new Sk.builtin.TypeError("unorderable types: " + new Sk.builtin.str(v_type).v + " "+ Sk.misceval.compareOpToOp[op] +" " + new Sk.builtin.str(w_type).v);
+            }
             switch (op) {
                 case "Lt":
                     return true;
@@ -894,7 +911,11 @@ Sk.misceval.asyncToPromise = function(suspendablefn, suspHandlers) {
                 try {
                     // jsh*nt insists these be defined outside the loop
                     var resume = function() {
-                        handleResponse(r.resume());
+                        try {
+                            handleResponse(r.resume());
+                        } catch (e) {
+                            reject(e);
+                        }
                     };
                     var resumeWithData = function resolved(x) {
                         try {
@@ -933,9 +954,13 @@ Sk.misceval.asyncToPromise = function(suspendablefn, suspHandlers) {
                         } else if (r.data["type"] == "Sk.yield") {
                             // Assumes all yields are optional, as Sk.setTimeout might
                             // not be able to yield.
-                            Sk.setTimeout(resume, 0);
+                            //Sk.setTimeout(resume, 0);
+                            setImmediate(resume);
                             return;
 
+                        } else if (r.data["type"] == "Sk.delay") {
+                            setImmediate(resume);
+                            return;
                         } else if (r.optional) {
                             // Unhandled optional suspensions just get
                             // resumed immediately, and we go around the loop again.

@@ -12,7 +12,7 @@ Sk.builtin.file = function (name, mode, buffering) {
         return new Sk.builtin.file(name, mode, buffering);
     }
 
-    this.mode = mode;
+    this.mode = Sk.ffi.remapToJs(mode);
     this.name = Sk.ffi.remapToJs(name);
     this.closed = false;
 
@@ -24,35 +24,38 @@ Sk.builtin.file = function (name, mode, buffering) {
     } else if (this.name === "/dev/stderr") {
         this.fileno = 2;
     } else {
-        if (Sk.inBrowser) {  // todo:  Maybe provide a replaceable function for non-import files
-            this.fileno = 10;
-            elem = document.getElementById(name.v);
-            if (elem == null) {
-                throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
-            } else {
-                if (elem.nodeName.toLowerCase() == "textarea") {
-                    this.data$ = elem.value;
-                } else {
-                    this.data$ = elem.textContent;
-                }
+        if (Sk.inBrowser) {
+            this.fileno = 11;
+            this.data$ = Sk["fileread"](this.name, this.mode);
+            
+            if (mode.v === "x" && this.data$ != null) {
+                throw new Sk.builtin.IOError("[Errno 2] File already exists: '" + name.v + "'");
             }
+
+            if (this.data$ == null) {
+                throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
+            }
+
+            this.lineList = this.data$.split("\n");
+            this.lineList = this.lineList.slice(0, -1);
+
+            for (i in this.lineList) {
+                this.lineList[i] = this.lineList[i] + "\n";
+            }
+            this.currentLine = 0;
         } else {
             this.fileno = 11;
             this.data$ = Sk.read(name.v);
-        }
 
-        this.lineList = this.data$.split("\n");
-        this.lineList = this.lineList.slice(0, -1);
-
-        for (i in this.lineList) {
-            this.lineList[i] = this.lineList[i] + "\n";
+            if (this.data$ == null) {
+                throw new Sk.builtin.IOError("[Errno 2] No such file or directory: '" + name.v + "'");
+            }
         }
-        this.currentLine = 0;
     }
     this.pos$ = 0;
 
     this.__class__ = Sk.builtin.file;
-
+    Sk.fileopen && Sk.fileopen(this);
     return this;
 };
 
@@ -122,12 +125,15 @@ Sk.builtin.file.prototype["read"] = new Sk.builtin.func(function (self, size) {
     return ret;
 });
 
-Sk.builtin.file.prototype["readline"] = new Sk.builtin.func(function (self, size) {
+Sk.builtin.file.$readline = function (self, size, prompt) {
     if (self.fileno === 0) {
         var x, resolution, susp;
 
-        var prompt = prompt ? prompt.v : "";
-        x = Sk.inputfun(prompt);
+        var lprompt = prompt != null ? Sk.ffi.remapToJs(prompt) : "";
+
+        lprompt = lprompt ? lprompt : "";
+
+        x = Sk.inputfun(lprompt);
 
         if (x instanceof Promise) {
             susp = new Sk.misceval.Suspension();
@@ -159,6 +165,10 @@ Sk.builtin.file.prototype["readline"] = new Sk.builtin.func(function (self, size
         }
         return new Sk.builtin.str(line);
     }
+};
+
+Sk.builtin.file.prototype["readline"] = new Sk.builtin.func(function (self, size) { 
+    return Sk.builtin.file.$readline(self, size, undefined); 
 });
 
 Sk.builtin.file.prototype["readlines"] = new Sk.builtin.func(function (self, sizehint) {
@@ -194,13 +204,21 @@ Sk.builtin.file.prototype["truncate"] = new Sk.builtin.func(function (self, size
     goog.asserts.fail();
 });
 
-Sk.builtin.file.prototype["write"] = new Sk.builtin.func(function (self, str) {
+Sk.builtin.file.prototype.write = new Sk.builtin.func(function(self, str) {
     if (self.fileno === 1) {
         Sk.output(Sk.ffi.remapToJs(str));
+    } else if (Sk.filewrite) {
+        if (self.closed) {
+            throw new Sk.builtin.ValueError("I/O operation on closed file");
+        }
+        if ("w" === self.mode || "b" === self.mode || "a" === self.mode || "a+" === self.mode || "w+" === self.mode) {
+            Sk.filewrite(self, Sk.ffi.remapToJs(str));
+        } else {
+            throw new Sk.builtin.IOError("File not open for writing");
+        }
     } else {
         goog.asserts.fail();
     }
 });
-
 
 goog.exportSymbol("Sk.builtin.file", Sk.builtin.file);

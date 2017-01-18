@@ -113,6 +113,16 @@ Sk.builtin.checkCallable = function (obj) {
     return false;
 };
 
+Sk.builtin.isNegativeZero = function (arg) {
+    var val = Sk.builtin.asnum$(arg);
+    if (1 / val === Number.NEGATIVE_INFINITY) {
+        return true;
+    }
+
+    return false;
+};
+goog.exportSymbol("Sk.builtin.isNegativeZero", Sk.builtin.isNegativeZero);
+
 Sk.builtin.checkNumber = function (arg) {
     return (arg !== null && (typeof arg === "number" ||
         arg instanceof Sk.builtin.int_ ||
@@ -205,6 +215,13 @@ Sk.builtin.func = function (code, globals, closure, closure2) {
         }
     }
     this.func_closure = closure;
+
+    if (Sk["builtin"] != null && Sk["builtin"]["str"] != null) {
+        this.__name__ = Object.create(Sk.builtin.str.prototype);
+        this.__name__.__class__ = Sk.builtin.str;
+        this.__name__.v = (this.func_code && this.func_code["co_name"] && this.func_code["co_name"].v) || "<native JS>";
+    }
+
     return this;
 };
 goog.exportSymbol("Sk.builtin.func", Sk.builtin.func);
@@ -216,7 +233,7 @@ Sk.builtin.func.prototype.tp$descr_get = function (obj, objtype) {
     if (obj == null) {
         return this;
     }
-    return new Sk.builtin.method(this, obj);
+    return new Sk.builtin.method(this, obj, objtype);
 };
 Sk.builtin.func.prototype.tp$call = function (args, kw) {
     var j;
@@ -241,6 +258,7 @@ Sk.builtin.func.prototype.tp$call = function (args, kw) {
                 args.push(undefined);
             }
         }
+
         args.push(this.func_closure);
     }
 
