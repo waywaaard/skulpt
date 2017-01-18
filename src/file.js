@@ -129,7 +129,7 @@ Sk.builtin.file.$readline = function (self, size, prompt) {
     if (self.fileno === 0) {
         var x, resolution, susp;
 
-        var lprompt = Sk.ffi.remapToJs(prompt);
+        var lprompt = prompt != null ? Sk.ffi.remapToJs(prompt) : "";
 
         lprompt = lprompt ? lprompt : "";
 
